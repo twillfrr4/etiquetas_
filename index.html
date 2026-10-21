@@ -333,8 +333,20 @@ function layout(L, st){
   let y=m+21.6*f;
   if(L.resp){ text(m, y, 2.6*f, 'Resp.: '+L.resp, tw); y+=3.3*f; }
   text(m, y, 2.4*f, 'Lote: '+L.lote, tw); y+=3.1*f;
-  if(L.event && y+2.4*f<=H-m){ text(m, y, 2.4*f, 'Evento: '+L.event, tw); y+=3.1*f; }
-  if(L.allergens && y+2.4*f<=H-m){ text(m, y, 2.4*f, 'Contém: '+L.allergens, tw, 1, {bold:true}); }
+  // Texto flexível: tenta 1 linha; se não couber, 2 linhas; se ainda não couber, diminui a letra.
+  const flex=(t, opt={})=>{
+    const cap=(s)=>Math.max(4, Math.floor(tw/(s*0.55)));
+    const room=H-m-y;
+    for(const s of [2.4*f, 2.1*f, 1.9*f]){
+      if(t.length<=cap(s) && room>=s){ text(m, y, s, t, tw, 1, opt); y+=s*1.3; return; }
+      if(t.length<=cap(s)*2 && room>=s*2.1){ text(m, y, s, t, tw, 2, opt); y+=s*2.15+0.4; return; }
+    }
+    const s=1.9*f, lines=room>=s*2.1?2:1;
+    if(room>=s){ text(m, y, s, t, tw, lines, opt); y+=s*1.05*lines+0.8; }
+  };
+  // Alergênicos primeiro: são mais importantes que o evento se faltar espaço.
+  if(L.allergens) flex('Contém: '+L.allergens, {bold:true});
+  if(L.event) flex('Evento: '+L.event);
   it.push({type:'qr', x:W-m-qr, y:H-m-qr, size:qr, data:qrData(L)});
   return it;
 }
