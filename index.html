@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Etiquetas da Cozinha</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--ink:#1f1b16;--muted:#6b6258;--line:#e4ddd2;--accent:#c2561a;--ok:#2e7d4f;--warn:#b7791f;--bad:#c0392b}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--ink);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{font-size:18px;margin:0;font-weight:700}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid #ffffff40;color:#fff;padding:8px 14px;border-radius:999px;font-size:15px;cursor:pointer;position:relative}
+nav button.active{background:var(--accent);border-color:var(--accent)}
+nav .bdg{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:var(--bad);font-size:12px;font-weight:700}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.tab{display:none}.tab.active{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{font-size:17px;margin:0 0 4px}
+label.f{display:block;font-size:13px;color:var(--muted);margin:14px 0 5px;font-weight:600}
+input,select,textarea{width:100%;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-family:inherit}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 14px;border-radius:999px;cursor:pointer;font-size:15px}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+.btn{border:0;background:var(--accent);color:#fff;font-size:16px;font-weight:600;padding:12px 18px;border-radius:12px;cursor:pointer}
+.btn:hover{filter:brightness(1.05)}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:7px 12px;font-size:14px;border-radius:9px}
+.btn.danger{background:#fff;color:var(--bad);border:1px solid #e8c2bd}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>.grow{flex:1;min-width:120px}
+.muted{color:var(--muted);font-size:14px}
+.note{background:#fff7ec;border:1px solid #f0d9b5;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.45}
+.preview-wrap{display:flex;justify-content:center;align-items:center;padding:24px 12px;background:repeating-conic-gradient(#ece7df 0 25%,#f7f4ef 0 50%) 0 0/16px 16px;border-radius:12px;overflow:auto;min-height:200px}
+.lbl{position:relative;background:#fff;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#000;flex:none}
+.preview-wrap .lbl{box-shadow:0 2px 12px #0003;border-radius:3px}
+.lbl .t{position:absolute;white-space:nowrap;overflow:hidden;line-height:1.05}
+.lbl .t.multi{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.lbl .t.b{font-weight:700}
+.lbl .t.inv{color:#fff}
+.lbl .box{position:absolute;background:#000}
+.lbl .qr{position:absolute}
+.lbl .qr img{width:100%;height:100%;image-rendering:pixelated;display:block}
+.lbl .qr .ph{width:100%;height:100%;border:1px dashed #999;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999}
+.counters{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.counter{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer}
+.counter b{display:block;font-size:26px}
+.counter.bad b{color:var(--bad)}.counter.warn b{color:var(--warn)}.counter.ok b{color:var(--ok)}
+.item{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.item:last-child{border-bottom:0}
+.item .info{flex:1;min-width:220px}
+.item .name{font-weight:700;font-size:16px}
+.item .meta{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5}
+.item .acts{display:flex;gap:6px;flex-wrap:wrap}
+.st{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff;margin-right:6px;vertical-align:middle}
+.st.ok{background:var(--ok)}.st.warn{background:var(--warn)}.st.bad{background:var(--bad)}.st.done{background:#9a9188}
+.valrow{display:grid;grid-template-columns:auto 1fr 110px;gap:8px;align-items:center;margin-top:8px}
+.valrow label{font-size:15px;display:flex;gap:8px;align-items:center;min-width:130px}
+.valrow input[type=checkbox]{width:20px;height:20px}
+.pchip{display:inline-flex;gap:6px;align-items:center;background:#f1ece4;border-radius:999px;padding:6px 6px 6px 12px;margin:4px 6px 0 0;font-size:14px}
+.pchip button{border:0;background:#fff;border-radius:999px;width:24px;height:24px;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;z-index:10;font-size:15px}
+#toast.show{opacity:1}
+#printArea{display:none}
+@media print{
+  body>*:not(#printArea){display:none!important}
+  body{background:#fff}
+  #printArea{display:block}
+  #printArea .lbl{break-after:page;page-break-after:always}
+}
+</style>
+<style id="pageStyle"></style>
+</head>
+<body>
+<header>
+  <h1>🏷️ Etiquetas da Cozinha</h1>
+  <nav>
+    <button data-tab="etiquetar" class="active">Etiquetar</button>
+    <button data-tab="validades">Validades<span class="bdg" id="tabBadge" hidden>0</span></button>
+    <button data-tab="produtos">Produtos</button>
+    <button data-tab="config">Configurações</button>
+  </nav>
+</header>
+
+<main>
+<!-- ETIQUETAR -->
+<section class="tab active" id="tab-etiquetar">
+  <div class="grid">
+    <div class="card">
+      <h2>Nova etiqueta</h2>
+      <label class="f" for="fProd">Produto</label>
+      <select id="fProd"></select>
+      <label class="f">Armazenamento</label>
+      <div class="chips" id="fStorage"></div>
+      <div class="row">
+        <div class="grow">
+          <label class="f" for="fMade">Manipulado / aberto em</label>
+          <input type="datetime-local" id="fMade">
+        </div>
+        <button class="btn sec sm" id="btnNow" style="margin-bottom:4px">Agora</button>
+      </div>
+      <label class="f" for="fExp">Validade (calculada — pode ajustar)</label>
+      <input type="datetime-local" id="fExp">
+      <label class="f" for="fResp">Responsável</label>
+      <input id="fResp" list="peopleList" placeholder="Nome de quem preparou">
+      <datalist id="peopleList"></datalist>
+      <label class="f" for="fEvent">Evento (opcional)</label>
+      <input id="fEvent" list="eventList" placeholder="Ex.: Formatura Villa Bosco 26/09">
+      <datalist id="eventList"></datalist>
+      <label class="f" for="fQty">Quantidade de etiquetas</label>
+      <input type="number" id="fQty" min="1" max="200" value="1">
+      <div class="row" style="margin-top:18px">
+        <button class="btn grow" id="btnPrint">Imprimir</button>
+        <button class="btn sec" id="btnZpl" title="Baixar o arquivo ZPL">Baixar ZPL</button>
+      </div>
+      <p class="muted" id="printHint" style="margin-bottom:0"></p>
+    </div>
+    <div class="card">
+      <h2>Prévia</h2>
+      <p class="muted" id="previewInfo" style="margin-top:0"></p>
+      <div class="preview-wrap" id="preview"></div>
+    </div>
+  </div>
+</section>
+
+<!-- VALIDADES -->
+<section class="tab" id="tab-validades">
+  <div class="counters">
+    <div class="counter bad" data-f="vencidas"><b id="cBad">0</b>Vencidas</div>
+    <div class="counter warn" data-f="vencendo"><b id="cWarn">0</b>Vencem em 24h</div>
+    <div class="counter ok" data-f="ativas"><b id="cOk">0</b>Ativas</div>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div class="grow">
+        <label class="f" for="vSearch" style="margin-top:0">Buscar (produto, lote, evento — ou leia o QR code)</label>
+        <input id="vSearch" placeholder="Digite ou escaneie…">
+      </div>
+    </div>
+    <div class="chips" id="vFilter" style="margin-top:12px">
+      <button class="chip on" data-f="ativas">Ativas</button>
+      <button class="chip" data-f="vencendo">Vencendo</button>
+      <button class="chip" data-f="vencidas">Vencidas</button>
+      <button class="chip" data-f="todas">Todas (inclui finalizadas)</button>
+    </div>
+    <div id="vList" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- PRODUTOS -->
+<section class="tab" id="tab-produtos">
+  <div class="grid">
+    <div class="card">
+      <h2 id="pFormTitle">Novo produto</h2>
+      <div class="note" style="margin-top:8px">Os prazos de validade devem seguir o Manual de Boas Práticas da cozinha (ou a orientação da nutricionista responsável). Os produtos "(exemplo)" são só para teste.</div>
+      <label class="f" for="pName">Nome do produto</label>
+      <input id="pName" placeholder="Ex.: Molho bechamel">
+      <label class="f" for="pCat">Categoria (opcional)</label>
+      <input id="pCat" list="catList" placeholder="Ex.: Molhos">
+      <datalist id="catList"></datalist>
+      <label class="f" for="pAll">Alergênicos (opcional)</label>
+      <input id="pAll" placeholder="Ex.: leite, glúten, ovo">
+      <label class="f">Validade por tipo de armazenamento</label>
+      <div id="pVals"></div>
+      <div class="row" style="margin-top:18px">
+        <button class="btn grow" id="pSave">Salvar produto</button>
+        <button class="btn sec" id="pCancel">Limpar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Produtos cadastrados</h2>
+      <input id="pSearch" placeholder="Buscar produto…" style="margin-top:8px">
+      <div id="pList" style="margin-top:8px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIG -->
+<section class="tab" id="tab-config">
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Impressora e etiqueta</h2>
+        <p class="muted" style="margin-top:0">Zebra ZD220t · 203 dpi · USB</p>
+        <div class="row">
+          <div class="grow"><label class="f" for="sW">Largura (mm)</label><input type="number" id="sW" min="20" max="104"></div>
+          <div class="grow"><label class="f" for="sH">Altura (mm)</label><input type="number" id="sH" min="15" max="200"></div>
+        </div>
+        <label class="f" for="sMethod">Forma de impressão</label>
+        <select id="sMethod">
+          <option value="browserprint">Zebra Browser Print (recomendado)</option>
+          <option value="driver">Imprimir pelo navegador (driver do Windows)</option>
+          <option value="zpl">Só baixar o arquivo ZPL</option>
+        </select>
+        <label class="f" for="sDark">Escuridão da impressão (0 a 30)</label>
+        <input type="number" id="sDark" min="0" max="30">
+        <label class="f" for="sCompany">Nome na etiqueta</label>
+        <input id="sCompany" placeholder="Ex.: Bosco">
+        <div class="row" style="margin-top:18px">
+          <button class="btn sec grow" id="btnTestConn">Testar conexão</button>
+          <button class="btn sec grow" id="btnTestPrint">Imprimir teste</button>
+        </div>
+        <p class="muted" id="connStatus"></p>
+      </div>
+      <div class="card">
+        <h2>Como ligar a Zebra (Browser Print)</h2>
+        <div class="muted" style="line-height:1.6">
+          1. No computador da cozinha, instale o <b>Zebra Browser Print</b> (gratuito, site da Zebra).<br>
+          2. Ligue a ZD220t no USB e instale o driver dela (ZDesigner).<br>
+          3. Abra o Browser Print e escolha a ZD220t como impressora padrão.<br>
+          4. Volte aqui e clique em <b>Testar conexão</b>. Na primeira vez, o Browser Print pergunta se aceita este site — clique em <b>Sim</b>.<br>
+          Se não funcionar, mude para "Imprimir pelo navegador" e ajuste o tamanho do papel no driver para o tamanho da etiqueta.
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Responsáveis</h2>
+        <div id="peopleChips"></div>
+        <div class="row" style="margin-top:10px">
+          <input id="newPerson" class="grow" placeholder="Adicionar nome">
+          <button class="btn sec sm" id="addPerson">Adicionar</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Backup dos dados</h2>
+        <p class="muted" style="margin-top:0">Os dados ficam guardados neste navegador, neste computador. Faça backup de vez em quando — se o histórico do navegador for apagado, tudo some.</p>
+        <div class="row">
+          <button class="btn sec grow" id="btnExport">Baixar backup</button>
+          <label class="btn sec grow" style="text-align:center">Restaurar backup<input type="file" id="fileImport" accept=".json" hidden></label>
+        </div>
+        <button class="btn danger" id="btnClean" style="margin-top:12px;width:100%">Apagar etiquetas finalizadas há mais de 30 dias</button>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<div id="printArea"></div>
+<div id="toast"></div>
+
+<script>
+// ---------- Dados ----------
+const STORAGES = {refrigerado:'Refrigerado', congelado:'Congelado', ambiente:'Ambiente'};
+const KEY = 'etiquetas_bosco_v1';
+const DEFAULT = {
+  settings:{widthMm:60, heightMm:40, dpi:203, method:'browserprint', darkness:20, company:'Bosco'},
+  products:[
+    {id:'ex1', name:'Molho de tomate (exemplo)', category:'Molhos', allergens:'',
+     val:{refrigerado:{on:true,v:3,u:'d'}, congelado:{on:true,v:30,u:'d'}, ambiente:{on:false,v:2,u:'h'}}},
+    {id:'ex2', name:'Frango desfiado (exemplo)', category:'Carnes', allergens:'',
+     val:{refrigerado:{on:true,v:3,u:'d'}, congelado:{on:true,v:30,u:'d'}, ambiente:{on:false,v:2,u:'h'}}}
+  ],
+  labels:[], people:[]
+};
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      const base = clone(DEFAULT);
+      return {
+        settings:Object.assign(base.settings, d.settings||{}),
+        products:Array.isArray(d.products)?d.products:base.products,
+        labels:Array.isArray(d.labels)?d.labels:[],
+        people:Array.isArray(d.people)?d.people:[]
+      };
+    }
+  }catch(e){}
+  return clone(DEFAULT);
+}
+let S = load();
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ toast('Atenção: não foi possível salvar neste navegador.'); } }
+
+// ---------- Utilidades ----------
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt(d){ d=new Date(d); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function compact(d){ d=new Date(d); return `${pad(d.getDate())}${pad(d.getMonth()+1)}${String(d.getFullYear()).slice(2)}${pad(d.getHours())}${pad(d.getMinutes())}`; }
+function toInput(d){ d=new Date(d); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function fromInput(v){ const d=new Date(v); return isNaN(d)?null:d; }
+function addVal(d, val){ return new Date(new Date(d).getTime() + Number(val.v) * (val.u==='h'?3600e3:86400e3)); }
+function valText(val){ return `${val.v} ${val.u==='h'?(val.v==1?'hora':'horas'):(val.v==1?'dia':'dias')}`; }
+function rel(ms){
+  const a=Math.abs(ms), m=Math.round(a/60000);
+  let t = m<60 ? `${m} min` : (a<48*3600e3 ? `${Math.round(a/3600e3)} h` : `${Math.round(a/86400e3)} dias`);
+  return ms>=0 ? `vence em ${t}` : `venceu há ${t}`;
+}
+let toastT;
+function toast(msg, ms=3200){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), ms); }
+function download(name, content, type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([content],{type})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 500);
+}
+function productById(id){ return S.products.find(p=>p.id===id); }
+
+function nextLote(d=new Date()){
+  const pre = `${pad(d.getDate())}${pad(d.getMonth()+1)}${String(d.getFullYear()).slice(2)}`;
+  let max=0;
+  S.labels.forEach(l=>{ if(l.lote && l.lote.startsWith(pre+'-')){ const n=parseInt(l.lote.split('-')[1],10); if(n>max) max=n; } });
+  return `${pre}-${String(max+1).padStart(3,'0')}`;
+}
+
+// ---------- Layout da etiqueta (em mm, usado na prévia e no ZPL) ----------
+function fit(text, wMm, hMm, lines){
+  text = String(text||'');
+  const max = Math.max(4, Math.floor(wMm/(hMm*0.55))) * lines;
+  return text.length>max ? text.slice(0, max-1).trim()+'.' : text;
+}
+function layout(L, st){
+  const W=+st.widthMm, H=+st.heightMm;
+  const f=Math.min(H/40, W/55), m=2;
+  const qr=Math.max(9, Math.min(H-m-(m+12.4*f)-0.5, W*0.32));
+  const tw=W-2*m-qr-1.5;
+  const it=[];
+  const text=(x,y,size,t,w,lines=1,opt={})=>it.push(Object.assign({type:'text',x,y,size,w,lines,text:fit(t,w,size,lines)},opt));
+  text(m, m, 2.3*f, `${(STORAGES[L.storage]||'').toUpperCase()}${st.company?' · '+st.company:''}`, W-2*m);
+  text(m, m+3.2*f, 4.2*f, L.productName, W-2*m, 2, {bold:true});
+  text(m, m+12.8*f, 2.6*f, 'Manip.: '+fmt(L.made), tw);
+  it.push({type:'box', x:m, y:m+16*f, w:tw, h:4.6*f});
+  text(m+0.8, m+16.75*f, 3.1*f, 'VAL: '+fmt(L.expires), tw-1.6, 1, {invert:true, bold:true});
+  let y=m+21.6*f;
+  if(L.resp){ text(m, y, 2.6*f, 'Resp.: '+L.resp, tw); y+=3.3*f; }
+  text(m, y, 2.4*f, 'Lote: '+L.lote, tw); y+=3.1*f;
+  if(L.event && y+2.4*f<=H-m){ text(m, y, 2.4*f, 'Evento: '+L.event, tw); y+=3.1*f; }
+  if(L.allergens && y+2.4*f<=H-m){ text(m, y, 2.4*f, 'Contém: '+L.allergens, tw, 1, {bold:true}); }
+  it.push({type:'qr', x:W-m-qr, y:H-m-qr, size:qr, data:qrData(L)});
+  return it;
+}
+function qrData(L){ return `ETQ:${L.lote}|V:${compact(L.expires)}`; }
+
+// ---------- ZPL (Zebra) ----------
+function zplClean(s){ return String(s).replace(/[\^~\\]/g,' '); }
+function buildZPL(L, st, copies=1){
+  const d=st.dpi/25.4, D=v=>Math.max(0,Math.round(v*d));
+  let z = `~SD${Math.max(0,Math.min(30,Math.round(st.darkness)))}\n^XA\n^CI28\n^PW${D(st.widthMm)}\n^LL${D(st.heightMm)}\n^LH0,0\n`;
+  layout(L, st).forEach(o=>{
+    if(o.type==='text'){
+      const h=D(o.size), w=Math.round(h*(o.bold?0.95:0.85));
+      z += `^FO${D(o.x)},${D(o.y)}^A0N,${h},${w}^FB${D(o.w)},${o.lines},0,L,0${o.invert?'^FR':''}^FD${zplClean(o.text)}^FS\n`;
+    }else if(o.type==='box'){
+      const bh=D(o.h); z += `^FO${D(o.x)},${D(o.y)}^GB${D(o.w)},${bh},${bh}^FS\n`;
+    }else if(o.type==='qr'){
+      const size=D(o.size), mods=29, mag=Math.max(1,Math.min(10,Math.floor(size/mods)));
+      const off=Math.max(0,Math.round((size-mods*mag)/2));
+      z += `^FO${D(o.x)+off},${D(o.y)+off-10}^BQN,2,${mag}^FDMA,${zplClean(o.data)}^FS\n`;
+    }
+  });
+  z += `^PQ${Math.max(1,copies|0)},0,1,Y\n^XZ\n`;
+  return z;
+}
+
+// ---------- Desenho HTML (prévia e impressão pelo navegador) ----------
+const qrCache = {};
+function qrUrl(text){
+  if(qrCache[text]) return qrCache[text];
+  if(!window.QRCode) return null;
+  try{
+    const tmp=document.createElement('div');
+    new QRCode(tmp,{text,width:256,height:256,correctLevel:QRCode.CorrectLevel.M});
+    const c=tmp.querySelector('canvas');
+    const url = c ? c.toDataURL() : null;
+    if(url) qrCache[text]=url;
+    return url;
+  }catch(e){ return null; }
+}
+function renderLabel(L, st, k, unit){
+  const u=v=>`${(v*k).toFixed(3)}${unit}`;
+  const el=document.createElement('div'); el.className='lbl';
+  el.style.width=u(st.widthMm); el.style.height=u(st.heightMm);
+  layout(L, st).forEach(o=>{
+    const e=document.createElement('div');
+    e.style.left=u(o.x); e.style.top=u(o.y);
+    if(o.type==='text'){
+      e.className='t'+(o.lines>1?' multi':'')+(o.bold?' b':'')+(o.invert?' inv':'');
+      e.style.width=u(o.w); e.style.fontSize=u(o.size);
+      if(o.lines>1) e.style.maxHeight=u(o.size*1.05*o.lines);
+      e.textContent=o.text;
+    }else if(o.type==='box'){
+      e.className='box'; e.style.width=u(o.w); e.style.height=u(o.h);
+    }else if(o.type==='qr'){
+      e.className='qr'; e.style.width=u(o.size); e.style.height=u(o.size);
+      const url=qrUrl(o.data);
+      e.innerHTML = url ? `<img alt="QR" src="${url}">` : `<div class="ph">QR</div>`;
+    }
+    el.appendChild(e);
+  });
+  return el;
+}
+
+// ---------- Zebra Browser Print ----------
+const BP_BASES=['http://127.0.0.1:9100','https://127.0.0.1:9101'];
+async function bpDevice(){
+  let last;
+  for(const b of BP_BASES){
+    try{
+      const r=await fetch(b+'/default?type=printer');
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const t=(await r.text()).trim();
+      if(!t) throw new Error('O Browser Print está aberto, mas não tem impressora padrão escolhida.');
+      return {base:b, device:JSON.parse(t)};
+    }catch(e){ last=e; }
+  }
+  if(last && last.message && last.message.includes('padrão')) throw last;
+  if(location.protocol==='file:') throw new Error('O sistema foi aberto como arquivo. O Browser Print só funciona pelo link do sistema (https://twillfrr4.github.io/etiquetas_/).');
+  throw new Error('Não consegui falar com o Zebra Browser Print. Confira se ele está aberto, se este site está em "Accepted Hosts" e se o Chrome permitiu "acesso à rede local" (ícone à esquerda do endereço).');
+}
+async function bpSend(zpl){
+  const {base, device}=await bpDevice();
+  const r=await fetch(base+'/write',{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({device,data:zpl})});
+  if(!r.ok) throw new Error('A impressora recusou o envio ('+r.status+').');
+  return device;
+}
+
+// ---------- Impressão ----------
+function printViaBrowser(L, st, copies){
+  copies=Math.min(copies,100);
+  $('#pageStyle').textContent=`@page{size:${st.widthMm}mm ${st.heightMm}mm;margin:0}`;
+  const area=$('#printArea'); area.innerHTML='';
+  for(let i=0;i<copies;i++) area.appendChild(renderLabel(L, st, 1, 'mm'));
+  setTimeout(()=>window.print(), 80);
+}
+async function sendToPrinter(L, copies, method=S.settings.method){
+  const st=S.settings;
+  if(method==='browserprint'){ await bpSend(buildZPL(L, st, copies)); return 'Enviado para a Zebra ✓'; }
+  if(method==='driver'){ printViaBrowser(L, st, copies); return 'Janela de impressão aberta'; }
+  download(`etiqueta-${L.lote}.zpl`, buildZPL(L, st, copies), 'text/plain'); return 'Arquivo ZPL baixado';
+}
+
+// ---------- Aba Etiquetar ----------
+const form={productId:null, storage:null, made:new Date(), expires:null};
+function renderProductSelect(){
+  const sel=$('#fProd');
+  const list=[...S.products].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  if(!list.length){ sel.innerHTML='<option value="">— cadastre um produto na aba Produtos —</option>'; form.productId=null; renderStorage(); renderPreview(); return; }
+  if(!productById(form.productId)) form.productId=list[0].id;
+  sel.innerHTML=list.map(p=>`<option value="${esc(p.id)}"${p.id===form.productId?' selected':''}>${esc(p.name)}${p.category?' · '+esc(p.category):''}</option>`).join('');
+  renderStorage();
+}
+function renderStorage(){
+  const p=productById(form.productId), box=$('#fStorage');
+  if(!p){ box.innerHTML='<span class="muted">—</span>'; form.storage=null; return; }
+  if(!form.storage || !p.val[form.storage] || !p.val[form.storage].on){
+    form.storage=Object.keys(STORAGES).find(k=>p.val[k]&&p.val[k].on)||null;
+  }
+  box.innerHTML=Object.entries(STORAGES).map(([k,n])=>{
+    const v=p.val[k]; const on=v&&v.on;
+    return `<button class="chip${form.storage===k?' on':''}" data-k="${k}"${on?'':' disabled'}>${n}${on?' · '+valText(v):''}</button>`;
+  }).join('');
+  recompute();
+}
+function recompute(){
+  const p=productById(form.productId);
+  if(p && form.storage){ form.expires=addVal(form.made, p.val[form.storage]); $('#fExp').value=toInput(form.expires); }
+  else { form.expires=null; $('#fExp').value=''; }
+  renderPreview();
+}
+function currentLabel(){
+  const p=productById(form.productId);
+  if(!p || !form.storage || !form.expires) return null;
+  return {lote:nextLote(), productId:p.id, productName:p.name, allergens:p.allergens||'', storage:form.storage,
+    made:form.made.toISOString(), expires:form.expires.toISOString(),
+    resp:$('#fResp').value.trim(), event:$('#fEvent').value.trim()};
+}
+function renderPreview(){
+  const box=$('#preview'), st=S.settings, L=currentLabel();
+  box.innerHTML='';
+  if(!L){ box.innerHTML='<span class="muted">Escolha um produto e o armazenamento.</span>'; $('#previewInfo').textContent=''; return; }
+  const k=Math.min(7, (box.clientWidth-40||420)/st.widthMm);
+  box.appendChild(renderLabel(L, st, k, 'px'));
+  $('#previewInfo').textContent=`Etiqueta ${st.widthMm}×${st.heightMm} mm · próximo lote ${L.lote}`;
+}
+function updateHints(){
+  const m=S.settings.method;
+  $('#printHint').textContent = m==='browserprint' ? 'Imprime direto na Zebra pelo Browser Print.' :
+    m==='driver' ? 'Abre a janela de impressão do navegador — escolha a ZD220t.' : 'Baixa o arquivo ZPL para enviar à impressora manualmente.';
+}
+function rememberPerson(name){
+  if(name && !S.people.some(p=>p.toLowerCase()===name.toLowerCase())){ S.people.push(name); renderPeople(); }
+}
+async function doPrint(method){
+  const L=currentLabel();
+  if(!L){ toast('Escolha um produto e o armazenamento.'); return; }
+  if(new Date(L.expires)<=new Date(L.made)){ toast('A validade precisa ser depois da data de manipulação.'); return; }
+  const qty=Math.max(1, Math.min(200, parseInt($('#fQty').value,10)||1));
+  const btn=$('#btnPrint'); btn.disabled=true;
+  try{
+    const msg=await sendToPrinter(L, qty, method);
+    const rec=Object.assign({id:uid(), qty, status:'ativa', createdAt:new Date().toISOString()}, L);
+    S.labels.push(rec); rememberPerson(L.resp); save();
+    renderEvents(); renderPreview(); updateBadge();
+    toast(`${msg} · lote ${rec.lote} (${qty}x)`);
+  }catch(e){
+    toast(e.message || 'Erro ao imprimir', 6000);
+  }finally{ btn.disabled=false; }
+}
+
+// ---------- Aba Validades ----------
+let vFilter='ativas';
+function statusOf(l, now=Date.now()){
+  if(l.status!=='ativa') return 'done';
+  const d=new Date(l.expires).getTime()-now;
+  return d<0 ? 'bad' : d<24*3600e3 ? 'warn' : 'ok';
+}
+function counts(){
+  const now=Date.now(); let bad=0,warn=0,act=0;
+  S.labels.forEach(l=>{ const s=statusOf(l,now); if(s==='done') return; act++; if(s==='bad') bad++; else if(s==='warn') warn++; });
+  return {bad,warn,act};
+}
+function updateBadge(){
+  const c=counts(), b=$('#tabBadge'), n=c.bad+c.warn;
+  b.hidden=!n; b.textContent=n;
+}
+function renderValidades(){
+  const c=counts(); $('#cBad').textContent=c.bad; $('#cWarn').textContent=c.warn; $('#cOk').textContent=c.act;
+  document.querySelectorAll('#vFilter .chip').forEach(b=>b.classList.toggle('on', b.dataset.f===vFilter));
+  let q=$('#vSearch').value.trim();
+  const mq=q.match(/ETQ:([^|\s]+)/i); if(mq) q=mq[1];
+  q=q.toLowerCase();
+  const now=Date.now();
+  let list=S.labels.filter(l=>{
+    const s=statusOf(l,now);
+    if(vFilter==='ativas' && s==='done') return false;
+    if(vFilter==='vencendo' && s!=='warn') return false;
+    if(vFilter==='vencidas' && s!=='bad') return false;
+    if(q && ![l.lote,l.productName,l.event,l.resp].some(x=>String(x||'').toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a,b)=> (a.status==='ativa')===(b.status==='ativa') ? new Date(a.expires)-new Date(b.expires) : (a.status==='ativa'?-1:1));
+  const box=$('#vList');
+  if(!list.length){ box.innerHTML=`<p class="muted">${S.labels.length?'Nada encontrado com esse filtro.':'Nenhuma etiqueta emitida ainda.'}</p>`; return; }
+  const lbl={ok:'OK',warn:'Vence em breve',bad:'VENCIDO',done:''};
+  box.innerHTML=list.map(l=>{
+    const s=statusOf(l,now), diff=new Date(l.expires).getTime()-now;
+    const stTxt = s==='done' ? (l.status==='usada'?'Usado':'Descartado') : lbl[s];
+    return `<div class="item">
+      <div class="info">
+        <div class="name"><span class="st ${s}">${stTxt}</span>${esc(l.productName)}</div>
+        <div class="meta">Validade <b>${fmt(l.expires)}</b>${s!=='done'?' · '+rel(diff):''}<br>
+        ${esc(STORAGES[l.storage]||'')} · Lote ${esc(l.lote)} · ${l.qty}x${l.resp?' · '+esc(l.resp):''}${l.event?' · '+esc(l.event):''}</div>
+      </div>
+      <div class="acts">${l.status==='ativa'
+        ? `<button class="btn sec sm" data-a="usada" data-id="${l.id}">Usado</button><button class="btn danger sm" data-a="descartada" data-id="${l.id}">Descartar</button>`
+        : `<button class="btn sec sm" data-a="ativa" data-id="${l.id}">Reativar</button>`}
+        <button class="btn sec sm" data-a="reprint" data-id="${l.id}">Reimprimir</button></div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- Aba Produtos ----------
+let editingId=null;
+function renderValInputs(val){
+  $('#pVals').innerHTML=Object.entries(STORAGES).map(([k,n])=>{
+    const v=(val&&val[k])||{on:false,v:'',u:'d'};
+    return `<div class="valrow" data-k="${k}">
+      <label><input type="checkbox" class="von"${v.on?' checked':''}> ${n}</label>
+      <input type="number" class="vv" min="0" step="1" value="${esc(v.v)}" placeholder="prazo">
+      <select class="vu"><option value="d"${v.u!=='h'?' selected':''}>dias</option><option value="h"${v.u==='h'?' selected':''}>horas</option></select>
+    </div>`;
+  }).join('');
+}
+function resetProductForm(){
+  editingId=null; $('#pFormTitle').textContent='Novo produto';
+  $('#pName').value=''; $('#pCat').value=''; $('#pAll').value='';
+  renderValInputs({refrigerado:{on:true,v:'',u:'d'}});
+}
+function editProduct(id){
+  const p=productById(id); if(!p) return;
+  editingId=id; $('#pFormTitle').textContent='Editar produto';
+  $('#pName').value=p.name; $('#pCat').value=p.category||''; $('#pAll').value=p.allergens||'';
+  renderValInputs(p.val); window.scrollTo({top:0,behavior:'smooth'}); $('#pName').focus();
+}
+function saveProduct(){
+  const name=$('#pName').value.trim();
+  if(!name){ toast('Dê um nome ao produto.'); return; }
+  const val={};
+  let any=false, bad=false;
+  document.querySelectorAll('#pVals .valrow').forEach(r=>{
+    const on=r.querySelector('.von').checked, v=parseFloat(r.querySelector('.vv').value), u=r.querySelector('.vu').value;
+    if(on && !(v>0)) bad=true;
+    if(on && v>0) any=true;
+    val[r.dataset.k]={on:on && v>0, v:v>0?v:0, u};
+  });
+  if(bad){ toast('Preencha o prazo dos armazenamentos marcados.'); return; }
+  if(!any){ toast('Marque pelo menos um armazenamento com prazo.'); return; }
+  const data={name, category:$('#pCat').value.trim(), allergens:$('#pAll').value.trim(), val};
+  if(editingId){ Object.assign(productById(editingId), data); toast('Produto atualizado'); }
+  else { const p=Object.assign({id:uid()}, data); S.products.push(p); form.productId=p.id; toast('Produto cadastrado'); }
+  save(); resetProductForm(); renderProducts(); renderProductSelect();
+}
+function renderProducts(){
+  const q=$('#pSearch').value.trim().toLowerCase();
+  const list=[...S.products].filter(p=>!q||(p.name+' '+(p.category||'')).toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  $('#catList').innerHTML=[...new Set(S.products.map(p=>p.category).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join('');
+  $('#pList').innerHTML = list.length ? list.map(p=>{
+    const vals=Object.entries(STORAGES).filter(([k])=>p.val[k]&&p.val[k].on).map(([k,n])=>`${n}: ${valText(p.val[k])}`).join(' · ');
+    return `<div class="item"><div class="info"><div class="name">${esc(p.name)}</div>
+      <div class="meta">${p.category?esc(p.category)+' · ':''}${esc(vals)}${p.allergens?'<br>Contém: '+esc(p.allergens):''}</div></div>
+      <div class="acts"><button class="btn sec sm" data-pe="${p.id}">Editar</button><button class="btn danger sm" data-pd="${p.id}">Excluir</button></div></div>`;
+  }).join('') : '<p class="muted">Nenhum produto.</p>';
+}
+
+// ---------- Aba Config ----------
+function renderSettings(){
+  const st=S.settings;
+  $('#sW').value=st.widthMm; $('#sH').value=st.heightMm; $('#sMethod').value=st.method; $('#sDark').value=st.darkness; $('#sCompany').value=st.company;
+  updateHints();
+}
+function renderPeople(){
+  $('#peopleList').innerHTML=S.people.map(p=>`<option value="${esc(p)}">`).join('');
+  $('#peopleChips').innerHTML = S.people.length ? S.people.map((p,i)=>`<span class="pchip">${esc(p)}<button data-pr="${i}" title="Remover">×</button></span>`).join('')
+    : '<p class="muted" style="margin:0">Ninguém cadastrado. Os nomes digitados ao imprimir entram aqui sozinhos.</p>';
+}
+function renderEvents(){
+  const ev=[]; [...S.labels].reverse().forEach(l=>{ if(l.event && !ev.includes(l.event)) ev.push(l.event); });
+  $('#eventList').innerHTML=ev.slice(0,20).map(e=>`<option value="${esc(e)}">`).join('');
+}
+
+// ---------- Eventos de tela ----------
+function showTab(t){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+t));
+  if(t==='validades') renderValidades();
+  if(t==='etiquetar') renderPreview();
+  if(t==='produtos') renderProducts();
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+$('#fProd').onchange=e=>{ form.productId=e.target.value; form.storage=null; renderStorage(); };
+$('#fStorage').onclick=e=>{ const b=e.target.closest('.chip'); if(!b||b.disabled) return; form.storage=b.dataset.k; renderStorage(); };
+$('#fMade').onchange=e=>{ const d=fromInput(e.target.value); if(d){ form.made=d; recompute(); } };
+$('#btnNow').onclick=()=>{ form.made=new Date(); $('#fMade').value=toInput(form.made); recompute(); };
+$('#fExp').onchange=e=>{ const d=fromInput(e.target.value); if(d){ form.expires=d; renderPreview(); } };
+['#fResp','#fEvent'].forEach(s=>$(s).oninput=renderPreview);
+$('#btnPrint').onclick=()=>doPrint();
+$('#btnZpl').onclick=()=>{ const L=currentLabel(); if(!L){ toast('Escolha um produto.'); return; }
+  const qty=Math.max(1,parseInt($('#fQty').value,10)||1); download(`etiqueta-${L.lote}.zpl`, buildZPL(L,S.settings,qty), 'text/plain'); toast('ZPL baixado (não foi registrado como impresso)'); };
+
+$('#vSearch').oninput=renderValidades;
+$('#vFilter').onclick=e=>{ const b=e.target.closest('.chip'); if(!b) return; vFilter=b.dataset.f; renderValidades(); };
+document.querySelectorAll('.counter').forEach(c=>c.onclick=()=>{ vFilter=c.dataset.f; renderValidades(); });
+$('#vList').onclick=async e=>{
+  const b=e.target.closest('button[data-a]'); if(!b) return;
+  const l=S.labels.find(x=>x.id===b.dataset.id); if(!l) return;
+  if(b.dataset.a==='reprint'){
+    try{ toast(await sendToPrinter(l, 1)); }catch(err){ toast(err.message, 6000); }
+    return;
+  }
+  l.status=b.dataset.a; l.closedAt=b.dataset.a==='ativa'?null:new Date().toISOString();
+  save(); renderValidades(); updateBadge();
+};
+
+$('#pSave').onclick=saveProduct;
+$('#pCancel').onclick=resetProductForm;
+$('#pSearch').oninput=renderProducts;
+$('#pList').onclick=e=>{
+  const ed=e.target.closest('[data-pe]'), del=e.target.closest('[data-pd]');
+  if(ed) editProduct(ed.dataset.pe);
+  if(del){ const p=productById(del.dataset.pd); if(p && confirm(`Excluir "${p.name}"? As etiquetas já emitidas continuam no histórico.`)){
+    S.products=S.products.filter(x=>x.id!==p.id); save(); renderProducts(); renderProductSelect(); if(editingId===p.id) resetProductForm(); } }
+};
+
+function bindSetting(sel, key, num){
+  $(sel).onchange=e=>{ let v=e.target.value; if(num){ v=parseFloat(v); if(!(v>=0)){ renderSettings(); return; } }
+    S.settings[key]=v; save(); updateHints(); renderPreview(); };
+}
+bindSetting('#sW','widthMm',true); bindSetting('#sH','heightMm',true); bindSetting('#sMethod','method');
+bindSetting('#sDark','darkness',true); bindSetting('#sCompany','company');
+$('#btnTestConn').onclick=async()=>{
+  $('#connStatus').textContent='Procurando a impressora…';
+  try{ const {device}=await bpDevice(); $('#connStatus').textContent=`✓ Conectado: ${device.name||'impressora Zebra'}`; }
+  catch(e){ $('#connStatus').textContent='✗ '+e.message; }
+};
+$('#btnTestPrint').onclick=async()=>{
+  const now=new Date();
+  const L={lote:'TESTE', productName:'Etiqueta de teste', allergens:'', storage:'refrigerado', made:now.toISOString(),
+    expires:addVal(now,{v:3,u:'d'}).toISOString(), resp:'Teste', event:''};
+  try{ toast(await sendToPrinter(L,1)); }catch(e){ toast(e.message, 6000); }
+};
+$('#addPerson').onclick=()=>{ const v=$('#newPerson').value.trim(); if(v){ rememberPerson(v); save(); $('#newPerson').value=''; } };
+$('#newPerson').onkeydown=e=>{ if(e.key==='Enter') $('#addPerson').click(); };
+$('#peopleChips').onclick=e=>{ const b=e.target.closest('[data-pr]'); if(!b) return; S.people.splice(+b.dataset.pr,1); save(); renderPeople(); };
+$('#btnExport').onclick=()=>download(`backup-etiquetas-${compact(new Date())}.json`, JSON.stringify(S,null,1), 'application/json');
+$('#fileImport').onchange=e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result);
+      if(!Array.isArray(d.products)||!Array.isArray(d.labels)) throw 0;
+      if(!confirm('Isso substitui todos os dados atuais pelos do backup. Continuar?')) return;
+      S={settings:Object.assign(clone(DEFAULT.settings), d.settings||{}), products:d.products, labels:d.labels, people:d.people||[]};
+      save(); init(); toast('Backup restaurado ✓');
+    }catch(err){ toast('Arquivo de backup inválido.'); } };
+  r.readAsText(file); e.target.value='';
+};
+$('#btnClean').onclick=()=>{
+  const lim=Date.now()-30*86400e3;
+  const old=S.labels.filter(l=>l.status!=='ativa' && new Date(l.closedAt||l.expires).getTime()<lim);
+  if(!old.length){ toast('Nada para apagar.'); return; }
+  if(!confirm(`Apagar ${old.length} etiqueta(s) finalizada(s) há mais de 30 dias?`)) return;
+  S.labels=S.labels.filter(l=>!old.includes(l)); save(); renderValidades(); toast('Histórico limpo');
+};
+
+// ---------- Início ----------
+function init(){
+  form.made=new Date(); $('#fMade').value=toInput(form.made);
+  renderSettings(); renderPeople(); renderEvents(); resetProductForm(); renderProducts(); renderProductSelect(); updateBadge();
+  if(document.querySelector('#tab-validades.active')) renderValidades();
+}
+window.addEventListener('resize', ()=>{ if(document.querySelector('#tab-etiquetar.active')) renderPreview(); });
+setInterval(()=>{ updateBadge(); if(document.querySelector('#tab-validades.active')) renderValidades(); }, 60000);
+init();
+</script>
+</body>
+</html>
