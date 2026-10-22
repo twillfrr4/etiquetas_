@@ -12,6 +12,9 @@
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
 header{background:var(--ink);color:#fff;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 header h1{font-size:18px;margin:0;font-weight:700}
+.hleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:#ffffff1f;color:#fff;white-space:nowrap;cursor:pointer;border:0;font-family:inherit}
+.pill.ok{background:#2e7d4f}.pill.warn{background:#b7791f}.pill.bad{background:#c0392b}
 nav{display:flex;gap:6px;flex-wrap:wrap}
 nav button{background:transparent;border:1px solid #ffffff40;color:#fff;padding:8px 14px;border-radius:999px;font-size:15px;cursor:pointer;position:relative}
 nav button.active{background:var(--accent);border-color:var(--accent)}
@@ -80,7 +83,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 </head>
 <body>
 <header>
-  <h1>🏷️ Etiquetas da Cozinha</h1>
+  <div class="hleft"><h1>🏷️ Etiquetas da Cozinha</h1><button class="pill" id="syncPill" title="Sincronização"></button></div>
   <nav>
     <button data-tab="etiquetar" class="active">Etiquetar</button>
     <button data-tab="validades">Validades<span class="bdg" id="tabBadge" hidden>0</span></button>
@@ -222,6 +225,20 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
     </div>
     <div>
       <div class="card">
+        <h2>Nuvem (Google Sheets)</h2>
+        <p class="muted" style="margin-top:0">Com a nuvem ligada, todos os computadores e celulares veem os mesmos dados, e tudo fica guardado na planilha do Google.</p>
+        <label class="f" for="cUrl">Link do App da Web</label>
+        <input id="cUrl" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+        <label class="f" for="cKey">Chave</label>
+        <input id="cKey" type="password" placeholder="Chave secreta" autocomplete="off">
+        <div class="row" style="margin-top:14px">
+          <button class="btn grow" id="cConnect">Conectar</button>
+          <button class="btn sec" id="cSyncNow">Sincronizar agora</button>
+          <button class="btn danger" id="cDisconnect">Desconectar</button>
+        </div>
+        <p class="muted" id="cStatus"></p>
+      </div>
+      <div class="card">
         <h2>Responsáveis</h2>
         <div id="peopleChips"></div>
         <div class="row" style="margin-top:10px">
@@ -282,6 +299,147 @@ function load(){
 }
 let S = load();
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ toast('Atenção: não foi possível salvar neste navegador.'); } }
+
+// ---------- Nuvem (Google Sheets) ----------
+const CKEY='etiquetas_nuvem_v1', OKEY='etiquetas_fila_v1';
+const readLS=(k,d)=>{ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?d:v; }catch(e){ return d; } };
+const writeLS=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+let cloud=readLS(CKEY,{}), outbox=readLS(OKEY,[]);
+const syncState={busy:false, err:'', last:null};
+const cloudOn=()=>!!(cloud && cloud.url && cloud.key);
+
+function productToRow(p){
+  const r={id:p.id, nome:p.name, categoria:p.category||'', alergenicos:p.allergens||''};
+  Object.keys(STORAGES).forEach(k=>{ const v=p.val&&p.val[k]; const on=!!(v&&v.on);
+    r[k+'_prazo']=on?String(v.v):''; r[k+'_unidade']=on?(v.u==='h'?'horas':'dias'):''; });
+  return r;
+}
+function rowToProduct(r){
+  const val={};
+  Object.keys(STORAGES).forEach(k=>{ const n=parseFloat(String(r[k+'_prazo']||'').replace(',','.'));
+    val[k]={on:n>0, v:n>0?n:0, u:/hora/i.test(r[k+'_unidade']||'')?'h':'d'}; });
+  return {id:r.id, name:r.nome||'(sem nome)', category:r.categoria||'', allergens:r.alergenicos||'', val};
+}
+function labelToRow(l){
+  return {id:l.id, lote:l.lote, produto_id:l.productId||'', produto:l.productName, alergenicos:l.allergens||'', armazenamento:l.storage,
+    manipulado_em:l.made, validade:l.expires, responsavel:l.resp||'', evento:l.event||'', quantidade:String(l.qty||1),
+    status:l.status||'ativa', criado_em:l.createdAt||'', finalizado_em:l.closedAt||''};
+}
+function rowToLabel(r){
+  return {id:r.id, lote:r.lote||'', productId:r.produto_id||'', productName:r.produto||'', allergens:r.alergenicos||'', storage:r.armazenamento||'',
+    made:r.manipulado_em||r.criado_em, expires:r.validade, resp:r.responsavel||'', event:r.evento||'', qty:parseInt(r.quantidade,10)||1,
+    status:r.status||'ativa', createdAt:r.criado_em||'', closedAt:r.finalizado_em||null};
+}
+const personRow=n=>({id:n.toLowerCase(), nome:n});
+
+function queueOp(op){ if(!cloudOn()) return; outbox.push(op); writeLS(OKEY,outbox); scheduleSync(); }
+const syncProduct=p=>queueOp({op:'upsert', table:'produtos', row:productToRow(p)});
+const syncLabel=l=>queueOp({op:'upsert', table:'etiquetas', row:labelToRow(l)});
+const syncPerson=n=>queueOp({op:'upsert', table:'pessoas', row:personRow(n)});
+const syncDelete=(table,id)=>queueOp({op:'delete', table, id});
+function allOps(){
+  return [...S.products.map(p=>({op:'upsert',table:'produtos',row:productToRow(p)})),
+    ...S.labels.map(l=>({op:'upsert',table:'etiquetas',row:labelToRow(l)})),
+    ...S.people.map(n=>({op:'upsert',table:'pessoas',row:personRow(n)}))];
+}
+
+async function api(body){
+  const r=await fetch(cloud.url,{method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(Object.assign({key:cloud.key}, body))});
+  if(!r.ok) throw new Error('A planilha respondeu com erro ('+r.status+').');
+  let j; try{ j=await r.json(); }catch(e){ throw new Error('Resposta inesperada. Confira se o link é o do App da Web (termina em /exec).'); }
+  if(!j.ok) throw new Error(j.erro||'Erro na planilha.');
+  return j;
+}
+let syncT;
+function scheduleSync(ms=500){ clearTimeout(syncT); syncT=setTimeout(syncNow, ms); }
+async function syncNow(){
+  if(!cloudOn()){ renderSync(); return; }
+  if(syncState.busy){ scheduleSync(1500); return; }
+  syncState.busy=true; renderSync();
+  const sent=outbox.slice();
+  try{
+    const j = sent.length ? await api({action:'ops', ops:sent}) : await api({action:'load'});
+    outbox.splice(0, sent.length); writeLS(OKEY,outbox);
+    applyRemote(j.data);
+    syncState.err=''; syncState.last=new Date();
+  }catch(e){
+    syncState.err=(e && e.message && !/fetch/i.test(e.message)) ? e.message : 'Sem conexão com a internet ou com a planilha.';
+  }finally{ syncState.busy=false; renderSync(); }
+  if(outbox.length && !syncState.err) scheduleSync(300);
+}
+function applyOpLocal(op){
+  if(op.table==='pessoas'){
+    const n=(op.row&&op.row.nome)||'', id=op.op==='delete'?op.id:n.toLowerCase();
+    S.people=S.people.filter(x=>x.toLowerCase()!==id);
+    if(op.op!=='delete' && n) S.people.push(n);
+    return;
+  }
+  const [key,conv]= op.table==='produtos' ? ['products',rowToProduct] : op.table==='etiquetas' ? ['labels',rowToLabel] : [];
+  if(!key) return;
+  const id=op.op==='delete'?op.id:op.row.id;
+  const i=S[key].findIndex(x=>x.id===id);
+  if(op.op==='delete'){ if(i>=0) S[key].splice(i,1); return; }
+  const obj=conv(op.row);
+  if(i>=0) S[key][i]=obj; else S[key].push(obj);
+}
+function applyRemote(d){
+  if(!d) return;
+  const before=JSON.stringify(S.products);
+  S.products=(d.produtos||[]).map(rowToProduct);
+  S.labels=(d.etiquetas||[]).map(rowToLabel).filter(l=>l.expires);
+  S.people=(d.pessoas||[]).map(r=>r.nome).filter(Boolean);
+  outbox.forEach(applyOpLocal);
+  save();
+  if(JSON.stringify(S.products)!==before){ renderProducts(); renderProductSelect(); }
+  renderPeople(); renderEvents(); updateBadge();
+  if(document.querySelector('#tab-validades.active')) renderValidades();
+  if(document.querySelector('#tab-etiquetar.active')) renderPreview();
+}
+function renderSync(){
+  const pill=$('#syncPill'), st=$('#cStatus'); if(!pill) return;
+  const n=outbox.length; let cls='', txt, det;
+  if(!cloudOn()){ txt='💾 Só neste computador'; det='Nuvem desligada: os dados ficam salvos só neste navegador.'; }
+  else if(syncState.busy){ txt='🔄 Sincronizando…'; det='Sincronizando com a planilha…'; }
+  else if(syncState.err){ cls=n?'bad':'warn'; txt='⚠️ Sem conexão'+(n?` · ${n} pendente${n>1?'s':''}`:'');
+    det='✗ '+syncState.err+(n?` ${n} alteração(ões) aguardando — serão enviadas quando a conexão voltar.`:''); }
+  else { cls='ok'; const t=syncState.last; txt='☁️ Sincronizado'; det='✓ Conectado à planilha'+(t?` · última sincronização ${pad(t.getHours())}:${pad(t.getMinutes())}`:''); }
+  pill.className='pill '+cls; pill.textContent=txt; pill.title=det;
+  if(st) st.textContent=det;
+  $('#cDisconnect').hidden=!cloudOn(); $('#cSyncNow').hidden=!cloudOn();
+  $('#cConnect').textContent=cloudOn()?'Reconectar':'Conectar';
+}
+async function connectCloud(){
+  const url=$('#cUrl').value.trim(), key=$('#cKey').value.trim(), st=$('#cStatus');
+  if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)){ st.textContent='✗ O link precisa começar com https://script.google.com/'; return; }
+  if(!key){ st.textContent='✗ Cole a chave.'; return; }
+  const prev=cloud; cloud={url,key};
+  st.textContent='Conectando…';
+  try{
+    const d=(await api({action:'load'})).data||{};
+    const remoteEmpty=!(d.produtos||[]).length && !(d.etiquetas||[]).length && !(d.pessoas||[]).length;
+    if(remoteEmpty){
+      outbox=allOps(); writeLS(OKEY,outbox); writeLS(CKEY,cloud);
+      await syncNow();
+      toast(syncState.err ? 'Conectado, mas o envio falhou: '+syncState.err : 'Conectado! Os dados deste computador foram enviados para a planilha ✓', 5000);
+    }else{
+      const hasLocal=S.labels.length>0 || S.products.some(p=>!/^ex\d$/.test(p.id));
+      if(prev.url!==url && hasLocal){
+        if(!confirm('A planilha já tem dados. Os dados deste computador serão trocados pelos da planilha (um backup deste computador será baixado antes). Continuar?')){ cloud=prev; renderSync(); return; }
+        download(`backup-antes-da-nuvem-${compact(new Date())}.json`, JSON.stringify(S,null,1), 'application/json');
+      }
+      if(prev.url!==url){ outbox=[]; writeLS(OKEY,outbox); }
+      writeLS(CKEY,cloud); applyRemote(d); syncState.err=''; syncState.last=new Date();
+      if(outbox.length) scheduleSync(100);
+      toast('Conectado! Dados carregados da planilha ✓', 4000);
+    }
+  }catch(e){
+    cloud=prev; st.textContent='✗ '+(/fetch/i.test(e.message)?'Não consegui acessar o link. Confira se ele está certo e se a implantação está como "Qualquer pessoa".':e.message);
+    return;
+  }
+  renderSync();
+}
+
 
 // ---------- Utilidades ----------
 const $ = s => document.querySelector(s);
@@ -501,7 +659,7 @@ function updateHints(){
     m==='driver' ? 'Abre a janela de impressão do navegador — escolha a ZD220t.' : 'Baixa o arquivo ZPL para enviar à impressora manualmente.';
 }
 function rememberPerson(name){
-  if(name && !S.people.some(p=>p.toLowerCase()===name.toLowerCase())){ S.people.push(name); renderPeople(); }
+  if(name && !S.people.some(p=>p.toLowerCase()===name.toLowerCase())){ S.people.push(name); renderPeople(); syncPerson(name); }
 }
 async function doPrint(method){
   const L=currentLabel();
@@ -512,7 +670,7 @@ async function doPrint(method){
   try{
     const msg=await sendToPrinter(L, qty, method);
     const rec=Object.assign({id:uid(), qty, status:'ativa', createdAt:new Date().toISOString()}, L);
-    S.labels.push(rec); rememberPerson(L.resp); save();
+    S.labels.push(rec); syncLabel(rec); rememberPerson(L.resp); save();
     renderEvents(); renderPreview(); updateBadge();
     toast(`${msg} · lote ${rec.lote} (${qty}x)`);
   }catch(e){
@@ -608,8 +766,8 @@ function saveProduct(){
   if(bad){ toast('Preencha o prazo dos armazenamentos marcados.'); return; }
   if(!any){ toast('Marque pelo menos um armazenamento com prazo.'); return; }
   const data={name, category:$('#pCat').value.trim(), allergens:$('#pAll').value.trim(), val};
-  if(editingId){ Object.assign(productById(editingId), data); toast('Produto atualizado'); }
-  else { const p=Object.assign({id:uid()}, data); S.products.push(p); form.productId=p.id; toast('Produto cadastrado'); }
+  if(editingId){ const p=productById(editingId); Object.assign(p, data); syncProduct(p); toast('Produto atualizado'); }
+  else { const p=Object.assign({id:uid()}, data); S.products.push(p); syncProduct(p); form.productId=p.id; toast('Produto cadastrado'); }
   save(); resetProductForm(); renderProducts(); renderProductSelect();
 }
 function renderProducts(){
@@ -644,7 +802,7 @@ function renderEvents(){
 function showTab(t){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
   document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+t));
-  if(t==='validades') renderValidades();
+  if(t==='validades'){ renderValidades(); if(cloudOn()) syncNow(); }
   if(t==='etiquetar') renderPreview();
   if(t==='produtos') renderProducts();
 }
@@ -671,7 +829,7 @@ $('#vList').onclick=async e=>{
     return;
   }
   l.status=b.dataset.a; l.closedAt=b.dataset.a==='ativa'?null:new Date().toISOString();
-  save(); renderValidades(); updateBadge();
+  syncLabel(l); save(); renderValidades(); updateBadge();
 };
 
 $('#pSave').onclick=saveProduct;
@@ -681,7 +839,7 @@ $('#pList').onclick=e=>{
   const ed=e.target.closest('[data-pe]'), del=e.target.closest('[data-pd]');
   if(ed) editProduct(ed.dataset.pe);
   if(del){ const p=productById(del.dataset.pd); if(p && confirm(`Excluir "${p.name}"? As etiquetas já emitidas continuam no histórico.`)){
-    S.products=S.products.filter(x=>x.id!==p.id); save(); renderProducts(); renderProductSelect(); if(editingId===p.id) resetProductForm(); } }
+    S.products=S.products.filter(x=>x.id!==p.id); syncDelete('produtos',p.id); save(); renderProducts(); renderProductSelect(); if(editingId===p.id) resetProductForm(); } }
 };
 
 function bindSetting(sel, key, num){
@@ -703,7 +861,7 @@ $('#btnTestPrint').onclick=async()=>{
 };
 $('#addPerson').onclick=()=>{ const v=$('#newPerson').value.trim(); if(v){ rememberPerson(v); save(); $('#newPerson').value=''; } };
 $('#newPerson').onkeydown=e=>{ if(e.key==='Enter') $('#addPerson').click(); };
-$('#peopleChips').onclick=e=>{ const b=e.target.closest('[data-pr]'); if(!b) return; S.people.splice(+b.dataset.pr,1); save(); renderPeople(); };
+$('#peopleChips').onclick=e=>{ const b=e.target.closest('[data-pr]'); if(!b) return; const gone=S.people.splice(+b.dataset.pr,1)[0]; if(gone) syncDelete('pessoas',gone.toLowerCase()); save(); renderPeople(); };
 $('#btnExport').onclick=()=>download(`backup-etiquetas-${compact(new Date())}.json`, JSON.stringify(S,null,1), 'application/json');
 $('#fileImport').onchange=e=>{
   const file=e.target.files[0]; if(!file) return;
@@ -712,7 +870,7 @@ $('#fileImport').onchange=e=>{
       if(!Array.isArray(d.products)||!Array.isArray(d.labels)) throw 0;
       if(!confirm('Isso substitui todos os dados atuais pelos do backup. Continuar?')) return;
       S={settings:Object.assign(clone(DEFAULT.settings), d.settings||{}), products:d.products, labels:d.labels, people:d.people||[]};
-      save(); init(); toast('Backup restaurado ✓');
+      allOps().forEach(queueOp); save(); init(); toast('Backup restaurado ✓');
     }catch(err){ toast('Arquivo de backup inválido.'); } };
   r.readAsText(file); e.target.value='';
 };
@@ -721,7 +879,7 @@ $('#btnClean').onclick=()=>{
   const old=S.labels.filter(l=>l.status!=='ativa' && new Date(l.closedAt||l.expires).getTime()<lim);
   if(!old.length){ toast('Nada para apagar.'); return; }
   if(!confirm(`Apagar ${old.length} etiqueta(s) finalizada(s) há mais de 30 dias?`)) return;
-  S.labels=S.labels.filter(l=>!old.includes(l)); save(); renderValidades(); toast('Histórico limpo');
+  S.labels=S.labels.filter(l=>!old.includes(l)); old.forEach(l=>syncDelete('etiquetas',l.id)); save(); renderValidades(); toast('Histórico limpo');
 };
 
 // ---------- Início ----------
@@ -733,6 +891,20 @@ function init(){
 window.addEventListener('resize', ()=>{ if(document.querySelector('#tab-etiquetar.active')) renderPreview(); });
 setInterval(()=>{ updateBadge(); if(document.querySelector('#tab-validades.active')) renderValidades(); }, 60000);
 init();
+$('#cConnect').onclick=connectCloud;
+$('#cSyncNow').onclick=()=>syncNow();
+$('#cDisconnect').onclick=()=>{
+  const n=outbox.length;
+  if(!confirm(n?`Ainda há ${n} alteração(ões) não enviadas para a planilha e elas serão perdidas. Desconectar mesmo assim?`:'Desconectar da nuvem? Os dados continuam neste computador, mas param de sincronizar.')) return;
+  cloud={}; outbox=[]; writeLS(CKEY,cloud); writeLS(OKEY,outbox); syncState.err=''; $('#cKey').value=''; renderSync(); toast('Nuvem desconectada');
+};
+$('#syncPill').onclick=()=>{ showTab('config'); if(cloudOn()) syncNow(); };
+window.addEventListener('online', ()=>syncNow());
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && cloudOn()) syncNow(); });
+setInterval(()=>{ if(cloudOn() && document.visibilityState==='visible') syncNow(); }, 60000);
+$('#cUrl').value=cloud.url||''; $('#cKey').value=cloud.key||'';
+renderSync();
+if(cloudOn()) syncNow();
 </script>
 </body>
 </html>
