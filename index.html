@@ -410,7 +410,9 @@ function renderSync(){
   $('#cConnect').textContent=cloudOn()?'Reconectar':'Conectar';
 }
 async function connectCloud(){
-  const url=$('#cUrl').value.trim(), key=$('#cKey').value.trim(), st=$('#cStatus');
+  let url=$('#cUrl').value.trim().replace(/\s+/g,''); const key=$('#cKey').value.trim(), st=$('#cStatus');
+  if(/^AKfyc[\w-]+$/.test(url)){ url=`https://script.google.com/macros/s/${url}/exec`; $('#cUrl').value=url; }
+  if(/^https:\/\/script\.google\.com\/.+\/(dev|edit)$/.test(url)){ st.textContent='✗ Use o link do App da Web que termina em /exec (não o /dev ou /edit).'; return; }
   if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)){ st.textContent='✗ O link precisa começar com https://script.google.com/'; return; }
   if(!key){ st.textContent='✗ Cole a chave.'; return; }
   const prev=cloud; cloud={url,key};
@@ -434,7 +436,7 @@ async function connectCloud(){
       toast('Conectado! Dados carregados da planilha ✓', 4000);
     }
   }catch(e){
-    cloud=prev; st.textContent='✗ '+(/fetch/i.test(e.message)?'Não consegui acessar o link. Confira se ele está certo e se a implantação está como "Qualquer pessoa".':e.message);
+    cloud=prev; st.textContent='✗ '+(/fetch|inesperada/i.test(e.message)?'Não consegui acessar a planilha. Confira se a implantação está com "Quem pode acessar: Qualquer pessoa" (não "Qualquer pessoa em Bosco…") e se o link termina em /exec.':e.message);
     return;
   }
   renderSync();
