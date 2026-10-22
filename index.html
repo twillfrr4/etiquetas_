@@ -268,6 +268,8 @@ function load(){
     if(raw){
       const d = JSON.parse(raw);
       const base = clone(DEFAULT);
+      // Volta quem ficou com a medida errada 70×50 para a medida real 60×40.
+      if(d.settings && +d.settings.widthMm===70 && +d.settings.heightMm===50){ d.settings.widthMm=60; d.settings.heightMm=40; }
       return {
         settings:Object.assign(base.settings, d.settings||{}),
         products:Array.isArray(d.products)?d.products:base.products,
