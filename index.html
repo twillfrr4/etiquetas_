@@ -353,7 +353,11 @@ async function api(body){
   const r=await fetch(cloud.url,{method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify(Object.assign({key:cloud.key}, body))});
   if(!r.ok) throw new Error('A planilha respondeu com erro ('+r.status+').');
-  let j; try{ j=await r.json(); }catch(e){ throw new Error('Resposta inesperada. Confira se o link é o do App da Web (termina em /exec).'); }
+  const txt=await r.text(); let j;
+  try{ j=JSON.parse(txt); }catch(e){
+    const t=(txt.match(/<title>([^<]*)<\/title>/i)||[])[1]||txt.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,140);
+    throw new Error('Resposta inesperada da planilha: "'+t+'" (endereço final: '+(r.url||'').split('?')[0].slice(0,80)+')');
+  }
   if(!j.ok) throw new Error(j.erro||'Erro na planilha.');
   return j;
 }
@@ -442,7 +446,11 @@ async function connectCloud(){
       toast('Conectado! Dados carregados da planilha ✓', 4000);
     }
   }catch(e){
-    cloud=prev; st.textContent='✗ '+(/fetch|inesperada/i.test(e.message)?'Não consegui acessar a planilha. Confira se a implantação está com "Quem pode acessar: Qualquer pessoa" (não "Qualquer pessoa em Bosco…") e se o link termina em /exec.':e.message);
+    cloud=prev;
+    const hint=/fetch|load failed|network/i.test(e.message)
+      ? 'O navegador foi bloqueado ao acessar o link. Normalmente é a planilha pedindo login (acesso que não está como "Qualquer pessoa") ou uma extensão/antivírus bloqueando.'
+      : /inesperada/i.test(e.message) ? 'A planilha respondeu com uma página em vez dos dados.' : '';
+    st.textContent='✗ '+(hint?hint+' — Detalhe técnico: ':'')+e.message;
     return;
   }
   renderSync();
