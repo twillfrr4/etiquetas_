@@ -93,6 +93,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
 .enl .enDel{border:1px solid var(--line);background:#fff;border-radius:9px;height:40px;cursor:pointer;font-size:18px;color:var(--bad)}
 .enl .enInfo{grid-column:1/-1;font-size:13px;color:var(--muted);margin-top:-2px}
 .enl .enInfo.bad{color:var(--bad)}
+.enl select:disabled{background:#f6f3ee;color:var(--muted)}
 .enl .enInfo a{color:var(--accent);cursor:pointer;text-decoration:underline}
 .entot{text-align:right;margin-top:14px;font-size:17px}
 @media(max-width:720px){
@@ -1206,15 +1207,15 @@ function lineCalc(l){
 function updateLine(i){
   const row=document.querySelector(`#enLinhas .enl[data-i="${i}"]`); if(!row) return;
   const l=enLines[i], k=lineCalc(l), sel=row.querySelector('.enUn'), info=row.querySelector('.enInfo');
-  const opts=k.it?[['u',k.it.un]]:[['u','—']];
+  const opts=k.it?[['u',k.it.un]]:[['u','← escolha o item']];
   if(k.it && k.it.qtdEmb>0) opts.push(['e',`${k.it.emb||'embalagem'} (${fq(k.it.qtdEmb)} ${k.it.un})`]);
   if(!opts.some(o=>o[0]===l.mode)) l.mode='u';
   const html=opts.map(o=>`<option value="${o[0]}"${o[0]===l.mode?' selected':''}>${esc(o[1])}</option>`).join('');
   if(sel.innerHTML!==html) sel.innerHTML=html;
-  sel.value=l.mode;
+  sel.value=l.mode; sel.disabled=!k.it;
   row.querySelector('.enTot').textContent=k.total?fr(k.total):'';
   info.className='enInfo';
-  if(!l.name.trim()){ info.textContent=''; }
+  if(!l.name.trim()){ info.textContent= i===0 && !S.items.length ? 'Nenhum item cadastrado ainda: importe a contagem em Estoque → Itens, ou digite o nome e clique em "Cadastrar".' : ''; }
   else if(!k.it){ info.className='enInfo bad'; info.innerHTML=`Item não cadastrado. <a data-novo="${i}">Cadastrar "${esc(l.name.trim())}"</a>`; }
   else {
     const parts=[];
