@@ -83,6 +83,29 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
   #printArea{display:block}
   #printArea .lbl{break-after:page;page-break-after:always}
 }
+.subnav{margin-bottom:14px}
+.sub{display:none}.sub.active{display:block}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;white-space:nowrap}
+.chk input{width:20px;height:20px}
+.enl{display:grid;grid-template-columns:minmax(0,3fr) minmax(70px,1fr) minmax(110px,1.3fr) minmax(80px,1fr) 100px 36px;gap:8px;align-items:center;margin-top:8px}
+.enl.enhead{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:18px}
+.enl .enTot{font-weight:700;text-align:right;font-size:15px}
+.enl .enDel{border:1px solid var(--line);background:#fff;border-radius:9px;height:40px;cursor:pointer;font-size:18px;color:var(--bad)}
+.enl .enInfo{grid-column:1/-1;font-size:13px;color:var(--muted);margin-top:-2px}
+.enl .enInfo.bad{color:var(--bad)}
+.enl .enInfo a{color:var(--accent);cursor:pointer;text-decoration:underline}
+.entot{text-align:right;margin-top:14px;font-size:17px}
+@media(max-width:720px){
+  .enl{grid-template-columns:1fr 1fr 1fr;border:1px solid var(--line);border-radius:12px;padding:10px}
+  .enl .enItem{grid-column:1/-1}
+  .enl.enhead{display:none}
+  .enl .enTot{text-align:left}
+}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.badge.bad{background:#fbe3e0;color:var(--bad)}.badge.warn{background:#fdf0d8;color:var(--warn)}
+.qty{font-size:20px;font-weight:700;white-space:nowrap;text-align:right}
+.qty small{font-size:13px;font-weight:500;color:var(--muted)}
+.mv-in{color:var(--ok)}.mv-out{color:var(--bad)}.mv-adj{color:var(--warn)}
 </style>
 <style id="pageStyle"></style>
 </head>
@@ -92,7 +115,8 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
   <nav>
     <button data-tab="etiquetar" class="active">Etiquetar</button>
     <button data-tab="validades">Validades<span class="bdg" id="tabBadge" hidden>0</span></button>
-    <button data-tab="produtos">Produtos</button>
+    <button data-tab="estoque">Estoque</button>
+    <button data-tab="produtos">Preparos</button>
     <button data-tab="config">Configurações</button>
   </nav>
 </header>
@@ -159,6 +183,109 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
       <button class="chip" data-f="todas">Todas (inclui finalizadas)</button>
     </div>
     <div id="vList" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- ESTOQUE -->
+<section class="tab" id="tab-estoque">
+  <div class="chips subnav" id="eSub">
+    <button class="chip on" data-s="saldo">Saldo</button>
+    <button class="chip" data-s="entrada">+ Entrada</button>
+    <button class="chip" data-s="itens">Itens</button>
+    <button class="chip" data-s="historico">Histórico</button>
+  </div>
+
+  <div class="sub active" id="sub-saldo">
+    <div class="counters">
+      <div class="counter"><b id="esItens">0</b>Itens</div>
+      <div class="counter bad" id="esBaixoBox"><b id="esBaixo">0</b>Abaixo do mínimo</div>
+      <div class="counter ok"><b id="esValor">R$ 0</b>Valor em estoque</div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="grow"><input id="esBusca" placeholder="Buscar item…"></div>
+        <div style="min-width:190px;flex:0 1 220px"><select id="esCat"></select></div>
+        <label class="chk"><input type="checkbox" id="esSoBaixo"> Só abaixo do mínimo</label>
+      </div>
+      <div id="esList" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="sub" id="sub-entrada">
+    <div class="card">
+      <h2>Entrada de mercadoria</h2>
+      <p class="muted" style="margin-top:2px">Lance a nota inteira de uma vez. Escolha a unidade ou a embalagem — o sistema converte sozinho.</p>
+      <div class="row">
+        <div class="grow"><label class="f" for="enData">Data do recebimento</label><input type="datetime-local" id="enData"></div>
+        <div class="grow"><label class="f" for="enForn">Fornecedor</label><input id="enForn" list="fornList" placeholder="Ex.: Atacadão"></div>
+        <div class="grow"><label class="f" for="enNota">Nº da nota (opcional)</label><input id="enNota" placeholder="Ex.: 12345"></div>
+        <div class="grow"><label class="f" for="enResp">Lançado por</label><input id="enResp" list="peopleList" placeholder="Seu nome"></div>
+      </div>
+      <datalist id="fornList"></datalist><datalist id="itemList"></datalist>
+      <div class="enl enhead"><span>Item</span><span>Quantidade</span><span>Unidade</span><span>Custo (R$)</span><span>Total</span><span></span></div>
+      <div id="enLinhas"></div>
+      <button class="btn sec sm" id="enAdd" style="margin-top:10px">+ Adicionar item</button>
+      <div class="entot">Total da nota: <b id="enTotal">R$ 0,00</b></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn grow" id="enSalvar">Salvar entrada</button>
+        <button class="btn sec" id="enLimpar">Limpar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub" id="sub-itens">
+    <div class="grid">
+      <div class="card">
+        <h2 id="itTitle">Novo item</h2>
+        <label class="f" for="itNome">Nome do item</label>
+        <input id="itNome" placeholder="Ex.: Arroz agulhinha tipo 1">
+        <div class="row">
+          <div class="grow"><label class="f" for="itCat">Categoria</label><select id="itCat"></select></div>
+          <div class="grow"><label class="f" for="itLocal">Local</label><select id="itLocal"></select></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label class="f" for="itUn">Unidade de controle</label><select id="itUn"></select></div>
+          <div class="grow"><label class="f" for="itMin">Estoque mínimo</label><input id="itMin" inputmode="decimal" placeholder="Ex.: 20"></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label class="f" for="itEmb">Embalagem de compra (opcional)</label><input id="itEmb" placeholder="Ex.: Fardo 6x5kg"></div>
+          <div class="grow"><label class="f" for="itQtdEmb">Qtd. por embalagem</label><input id="itQtdEmb" inputmode="decimal" placeholder="Ex.: 30"></div>
+        </div>
+        <div class="row">
+          <div class="grow"><label class="f" for="itCusto">Custo por unidade (R$)</label><input id="itCusto" inputmode="decimal" placeholder="Ex.: 5,20"></div>
+          <div class="grow"><label class="f" for="itForn">Fornecedor</label><input id="itForn" list="fornList"></div>
+        </div>
+        <label class="f" for="itObs">Observações</label>
+        <input id="itObs">
+        <p class="muted" id="itSaldoInfo"></p>
+        <div class="row" style="margin-top:14px">
+          <button class="btn grow" id="itSalvar">Salvar item</button>
+          <button class="btn sec" id="itLimpar">Limpar</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Itens cadastrados</h2>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sec grow" id="itImport">Importar planilha de estoque (.xlsx)</button>
+          <input type="file" id="itFile" accept=".xlsx,.xls,.csv" hidden>
+        </div>
+        <p class="muted" style="margin:8px 0 0">Use a planilha modelo de contagem. Itens com o mesmo nome são atualizados e o saldo é ajustado para a "Quantidade atual".</p>
+        <input id="itBusca" placeholder="Buscar item…" style="margin-top:10px">
+        <div id="itList" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub" id="sub-historico">
+    <div class="card">
+      <div class="row">
+        <div class="grow"><input id="hBusca" placeholder="Buscar item, fornecedor, nota…"></div>
+        <div style="flex:0 1 220px;min-width:170px"><select id="hTipo">
+          <option value="">Todos os movimentos</option><option value="entrada">Entradas</option>
+          <option value="ajuste">Ajustes / contagem</option><option value="saida">Saídas</option></select></div>
+      </div>
+      <div id="hList" style="margin-top:8px"></div>
+    </div>
   </div>
 </section>
 
@@ -254,7 +381,7 @@ input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
       </div>
       <div class="card">
         <h2>Backup dos dados</h2>
-        <p class="muted" style="margin-top:0">Os dados ficam guardados neste navegador, neste computador. Faça backup de vez em quando — se o histórico do navegador for apagado, tudo some.</p>
+        <p class="muted" style="margin-top:0">Baixa um arquivo com tudo (etiquetas, preparos e estoque). Com a nuvem ligada, os dados também ficam na planilha do Google.</p>
         <div class="row">
           <button class="btn sec grow" id="btnExport">Baixar backup</button>
           <label class="btn sec grow" style="text-align:center">Restaurar backup<input type="file" id="fileImport" accept=".json" hidden></label>
@@ -281,7 +408,7 @@ const DEFAULT = {
     {id:'ex2', name:'Frango desfiado (exemplo)', category:'Carnes', allergens:'',
      val:{refrigerado:{on:true,v:3,u:'d'}, congelado:{on:true,v:30,u:'d'}, ambiente:{on:false,v:2,u:'h'}}}
   ],
-  labels:[], people:[]
+  labels:[], people:[], items:[], moves:[]
 };
 
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -297,7 +424,9 @@ function load(){
         settings:Object.assign(base.settings, d.settings||{}),
         products:Array.isArray(d.products)?d.products:base.products,
         labels:Array.isArray(d.labels)?d.labels:[],
-        people:Array.isArray(d.people)?d.people:[]
+        people:Array.isArray(d.people)?d.people:[],
+        items:Array.isArray(d.items)?d.items:[],
+        moves:Array.isArray(d.moves)?d.moves:[]
       };
     }
   }catch(e){}
@@ -346,7 +475,9 @@ const syncDelete=(table,id)=>queueOp({op:'delete', table, id});
 function allOps(){
   return [...S.products.map(p=>({op:'upsert',table:'produtos',row:productToRow(p)})),
     ...S.labels.map(l=>({op:'upsert',table:'etiquetas',row:labelToRow(l)})),
-    ...S.people.map(n=>({op:'upsert',table:'pessoas',row:personRow(n)}))];
+    ...S.people.map(n=>({op:'upsert',table:'pessoas',row:personRow(n)})),
+    ...S.items.map(i=>({op:'upsert',table:'itens',row:itemToRow(i)})),
+    ...S.moves.map(m=>({op:'upsert',table:'movimentos',row:moveToRow(m)}))];
 }
 
 async function api(body){
@@ -370,9 +501,12 @@ async function syncNow(){
   const sent=outbox.slice();
   try{
     const j = sent.length ? await api({action:'ops', ops:sent}) : await api({action:'load'});
-    outbox.splice(0, sent.length); writeLS(OKEY,outbox);
-    applyRemote(j.data);
-    syncState.err=''; syncState.last=new Date();
+    const d=j.data||{};
+    const pend=sent.filter(op=>!Array.isArray(d[op.table]));   // tabelas que a planilha ainda não conhece
+    outbox=pend.concat(outbox.slice(sent.length)); writeLS(OKEY,outbox);
+    applyRemote(d);
+    syncState.err= (!Array.isArray(d.itens) && (pend.length || S.items.length)) ? 'O código da planilha está desatualizado: o estoque ainda não está indo para a nuvem. Atualize o código no Apps Script (versão 2).' : '';
+    syncState.last=new Date();
   }catch(e){
     syncState.err=(e && e.message && !/fetch/i.test(e.message)) ? e.message : 'Sem conexão com a internet ou com a planilha.';
   }finally{ syncState.busy=false; renderSync(); }
@@ -385,7 +519,8 @@ function applyOpLocal(op){
     if(op.op!=='delete' && n) S.people.push(n);
     return;
   }
-  const [key,conv]= op.table==='produtos' ? ['products',rowToProduct] : op.table==='etiquetas' ? ['labels',rowToLabel] : [];
+  const [key,conv]= op.table==='produtos' ? ['products',rowToProduct] : op.table==='etiquetas' ? ['labels',rowToLabel]
+    : op.table==='itens' ? ['items',rowToItem] : op.table==='movimentos' ? ['moves',rowToMove] : [];
   if(!key) return;
   const id=op.op==='delete'?op.id:op.row.id;
   const i=S[key].findIndex(x=>x.id===id);
@@ -399,20 +534,24 @@ function applyRemote(d){
   S.products=(d.produtos||[]).map(rowToProduct);
   S.labels=(d.etiquetas||[]).map(rowToLabel).filter(l=>l.expires);
   S.people=(d.pessoas||[]).map(r=>r.nome).filter(Boolean);
+  // Planilha com código antigo (sem abas de estoque): mantém o estoque deste computador.
+  if(Array.isArray(d.itens)) S.items=d.itens.map(rowToItem);
+  if(Array.isArray(d.movimentos)) S.moves=d.movimentos.map(rowToMove);
   outbox.forEach(applyOpLocal);
   save();
   if(JSON.stringify(S.products)!==before){ renderProducts(); renderProductSelect(); }
   renderPeople(); renderEvents(); updateBadge();
   if(document.querySelector('#tab-validades.active')) renderValidades();
   if(document.querySelector('#tab-etiquetar.active')) renderPreview();
+  if(typeof renderEstoque==='function' && !(document.activeElement||document.body).closest('#sub-entrada,#sub-itens')) renderEstoque();
 }
 function renderSync(){
   const pill=$('#syncPill'), st=$('#cStatus'); if(!pill) return;
   const n=outbox.length; let cls='', txt, det;
   if(!cloudOn()){ txt='💾 Só neste computador'; det='Nuvem desligada: os dados ficam salvos só neste navegador.'; }
   else if(syncState.busy){ txt='🔄 Sincronizando…'; det='Sincronizando com a planilha…'; }
-  else if(syncState.err){ cls=n?'bad':'warn'; txt='⚠️ Sem conexão'+(n?` · ${n} pendente${n>1?'s':''}`:'');
-    det='✗ '+syncState.err+(n?` ${n} alteração(ões) aguardando — serão enviadas quando a conexão voltar.`:''); }
+  else if(syncState.err){ cls=n?'bad':'warn'; txt=/desatualizado/.test(syncState.err)?'⚠️ Atualize o código da planilha':'⚠️ Sem conexão'+(n?` · ${n} pendente${n>1?'s':''}`:'');
+    det='✗ '+syncState.err+(n&&!/desatualizado/.test(syncState.err)?` ${n} alteração(ões) aguardando — serão enviadas quando a conexão voltar.`:''); }
   else { cls='ok'; const t=syncState.last; txt='☁️ Sincronizado'; det='✓ Conectado à planilha'+(t?` · última sincronização ${pad(t.getHours())}:${pad(t.getMinutes())}`:''); }
   pill.className='pill '+cls; pill.textContent=txt; pill.title=det;
   if(st) st.textContent=det;
@@ -429,7 +568,7 @@ async function connectCloud(){
   st.textContent='Conectando…';
   try{
     const d=(await api({action:'load'})).data||{};
-    const remoteEmpty=!(d.produtos||[]).length && !(d.etiquetas||[]).length && !(d.pessoas||[]).length;
+    const remoteEmpty=!(d.produtos||[]).length && !(d.etiquetas||[]).length && !(d.pessoas||[]).length && !(d.itens||[]).length && !(d.movimentos||[]).length;
     if(remoteEmpty){
       outbox=allOps(); writeLS(OKEY,outbox); writeLS(CKEY,cloud);
       await syncNow();
@@ -852,6 +991,7 @@ function showTab(t){
   if(t==='validades'){ renderValidades(); if(cloudOn()) syncNow(); }
   if(t==='etiquetar') renderPreview();
   if(t==='produtos') renderProducts();
+  if(t==='estoque'){ renderEstoque(); if(cloudOn()) syncNow(); }
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 
@@ -917,8 +1057,8 @@ $('#fileImport').onchange=e=>{
   r.onload=()=>{ try{ const d=JSON.parse(r.result);
       if(!Array.isArray(d.products)||!Array.isArray(d.labels)) throw 0;
       if(!confirm('Isso substitui todos os dados atuais pelos do backup. Continuar?')) return;
-      S={settings:Object.assign(clone(DEFAULT.settings), d.settings||{}), products:d.products, labels:d.labels, people:d.people||[]};
-      allOps().forEach(queueOp); save(); init(); toast('Backup restaurado ✓');
+      S={settings:Object.assign(clone(DEFAULT.settings), d.settings||{}), products:d.products, labels:d.labels, people:d.people||[], items:d.items||[], moves:d.moves||[]};
+      allOps().forEach(queueOp); save(); init(); renderEstoque(); toast('Backup restaurado ✓');
     }catch(err){ toast('Arquivo de backup inválido.'); } };
   r.readAsText(file); e.target.value='';
 };
@@ -930,6 +1070,382 @@ $('#btnClean').onclick=()=>{
   S.labels=S.labels.filter(l=>!old.includes(l)); old.forEach(l=>syncDelete('etiquetas',l.id)); save(); renderValidades(); toast('Histórico limpo');
 };
 
+
+// ---------- Estoque ----------
+const CATS=['Alimentos - Secos','Alimentos - Carnes','Alimentos - Laticínios e frios','Alimentos - Hortifruti','Alimentos - Congelados','Bebidas - Não alcoólicas','Bebidas - Alcoólicas','Limpeza','Descartáveis','Outros'];
+const UNITS=['kg','g','L','ml','un','cx','pct','fardo','garrafa','lata','galão'];
+const LOCAIS=['Estoque seco','Câmara fria','Geladeira','Freezer','Bebidas / adega','Depósito de limpeza','Outro'];
+const TIPOS={entrada:'Entrada', saida:'Saída', ajuste:'Ajuste'};
+
+function parseNum(v){
+  if(v===null||v===undefined) return NaN;
+  if(typeof v==='number') return v;
+  let s=String(v).trim().replace(/R\$\s*/i,'').replace(/\s/g,'');
+  if(!s) return NaN;
+  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  return parseFloat(s);
+}
+const nfQ=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3});
+const nfR=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const fq=n=>nfQ.format(Math.round((+n||0)*1000)/1000);
+const fr=n=>nfR.format(+n||0);
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const itemById=id=>S.items.find(i=>i.id===id);
+const itemByName=name=>{ const n=norm(name); return n?S.items.find(i=>norm(i.name)===n):null; };
+
+function saldoMap(){
+  const m={};
+  S.moves.forEach(mv=>{ m[mv.itemId]=(m[mv.itemId]||0)+(+mv.qtd||0); });
+  return m;
+}
+const saldoDe=id=>S.moves.reduce((s,mv)=>mv.itemId===id?s+(+mv.qtd||0):s,0);
+
+// --- nuvem: conversões ---
+function itemToRow(i){ return {id:i.id, nome:i.name, categoria:i.cat||'', unidade:i.un||'', embalagem:i.emb||'',
+  qtd_embalagem:i.qtdEmb>0?String(i.qtdEmb):'', local:i.local||'', minimo:i.min>=0&&i.min!==''&&i.min!=null?String(i.min):'',
+  custo:i.custo>0?String(i.custo):'', fornecedor:i.forn||'', observacoes:i.obs||''}; }
+function rowToItem(r){ const n=k=>{ const v=parseNum(r[k]); return isNaN(v)?null:v; };
+  return {id:r.id, name:r.nome||'(sem nome)', cat:r.categoria||'', un:r.unidade||'un', emb:r.embalagem||'', qtdEmb:n('qtd_embalagem'),
+    local:r.local||'', min:n('minimo'), custo:n('custo'), forn:r.fornecedor||'', obs:r.observacoes||''}; }
+function moveToRow(m){ return {id:m.id, data:m.date, tipo:m.type, item_id:m.itemId, item:m.itemName, quantidade:String(m.qtd),
+  unidade:m.un||'', custo_unitario:m.custo>0?String(m.custo):'', valor:m.valor?String(m.valor):'', fornecedor:m.forn||'',
+  nota:m.nota||'', evento:m.event||'', responsavel:m.resp||'', grupo:m.group||'', observacao:m.obs||''}; }
+function rowToMove(r){ const n=k=>{ const v=parseNum(r[k]); return isNaN(v)?0:v; };
+  return {id:r.id, date:r.data||r.atualizado_em, type:r.tipo||'ajuste', itemId:r.item_id, itemName:r.item||'', qtd:n('quantidade'),
+    un:r.unidade||'', custo:n('custo_unitario'), valor:n('valor'), forn:r.fornecedor||'', nota:r.nota||'', event:r.evento||'',
+    resp:r.responsavel||'', group:r.grupo||'', obs:r.observacao||''}; }
+const syncItem=i=>queueOp({op:'upsert', table:'itens', row:itemToRow(i)});
+const syncMove=m=>queueOp({op:'upsert', table:'movimentos', row:moveToRow(m)});
+
+// --- navegação interna ---
+let eSub='saldo';
+function showSub(s){
+  eSub=s;
+  document.querySelectorAll('#eSub .chip').forEach(b=>b.classList.toggle('on', b.dataset.s===s));
+  document.querySelectorAll('#tab-estoque .sub').forEach(d=>d.classList.toggle('active', d.id==='sub-'+s));
+  renderEstoque();
+}
+function renderEstoque(){
+  if(!document.querySelector('#tab-estoque.active')) return;
+  renderLists();
+  if(eSub==='saldo') renderSaldo();
+  if(eSub==='itens') renderItens();
+  if(eSub==='historico') renderHist();
+  if(eSub==='entrada') enLines.forEach((_,i)=>updateLine(i));
+}
+function renderLists(){
+  const forn=new Set(); S.items.forEach(i=>i.forn&&forn.add(i.forn)); S.moves.forEach(m=>m.forn&&forn.add(m.forn));
+  $('#fornList').innerHTML=[...forn].sort().map(f=>`<option value="${esc(f)}">`).join('');
+  $('#itemList').innerHTML=[...S.items].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(i=>`<option value="${esc(i.name)}">`).join('');
+  const opts=(arr,cur)=>{ const a=[...arr]; if(cur&&!a.includes(cur)) a.push(cur); return a.map(v=>`<option${v===cur?' selected':''}>${esc(v)}</option>`).join(''); };
+  const used=new Set(S.items.map(i=>i.cat).filter(Boolean));
+  $('#esCat').innerHTML='<option value="">Todas as categorias</option>'+[...new Set([...CATS,...used])].map(c=>`<option>${esc(c)}</option>`).join('');
+  $('#esCat').value=esCat;
+  if(!$('#itCat').options.length){ $('#itCat').innerHTML=opts(CATS); $('#itUn').innerHTML=opts(UNITS); $('#itLocal').innerHTML=opts(LOCAIS); }
+}
+
+// --- Saldo ---
+let esCat='';
+function statusItem(i, saldo){
+  if(saldo<=0) return ['bad','Zerado'];
+  if(i.min>0 && saldo<i.min) return ['warn','Abaixo do mínimo'];
+  return null;
+}
+function renderSaldo(){
+  const sm=saldoMap(); let baixo=0, valor=0;
+  S.items.forEach(i=>{ const s=sm[i.id]||0; if(i.min>0 && s<i.min) baixo++; if(s>0 && i.custo>0) valor+=s*i.custo; });
+  $('#esItens').textContent=S.items.length; $('#esBaixo').textContent=baixo; $('#esValor').textContent=fr(valor);
+  const q=norm($('#esBusca').value), so=$('#esSoBaixo').checked;
+  const list=S.items.filter(i=>{
+    const s=sm[i.id]||0;
+    if(esCat && i.cat!==esCat) return false;
+    if(so && !(i.min>0 && s<i.min)) return false;
+    if(q && !norm(i.name+' '+i.cat+' '+i.forn+' '+i.local).includes(q)) return false;
+    return true;
+  }).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  const box=$('#esList');
+  if(!S.items.length){ box.innerHTML='<p class="muted">Nenhum item cadastrado. Vá em <b>Itens</b> para importar a planilha de contagem ou cadastrar.</p>'; return; }
+  if(!list.length){ box.innerHTML='<p class="muted">Nada encontrado com esse filtro.</p>'; return; }
+  box.innerHTML=list.map(i=>{
+    const s=sm[i.id]||0, st=statusItem(i,s);
+    const emb=i.qtdEmb>0&&i.emb?` · ${esc(i.emb)} (${fq(i.qtdEmb)} ${esc(i.un)})`:'';
+    return `<div class="item"><div class="info">
+      <div class="name">${esc(i.name)}${st?`<span class="badge ${st[0]}">${st[1]}</span>`:''}</div>
+      <div class="meta">${esc(i.cat||'')}${i.local?' · '+esc(i.local):''}${i.min>0?` · mínimo ${fq(i.min)} ${esc(i.un)}`:''}${emb}${i.custo>0?` · ${fr(i.custo)}/${esc(i.un)} · ${fr(Math.max(0,s)*i.custo)} em estoque`:''}</div>
+    </div>
+    <div class="qty">${fq(s)} <small>${esc(i.un)}</small></div>
+    <div class="acts"><button class="btn sec sm" data-hist="${i.id}">Histórico</button><button class="btn sec sm" data-edit="${i.id}">Editar</button></div></div>`;
+  }).join('');
+}
+
+// --- Entrada ---
+let enLines=[];
+const blankLine=()=>({name:'', qtd:'', mode:'u', custo:'', custoAuto:true});
+function resetEntrada(){
+  enLines=[blankLine(),blankLine(),blankLine()];
+  $('#enData').value=toInput(new Date()); $('#enForn').value=''; $('#enNota').value='';
+  renderEnLines();
+}
+function renderEnLines(){
+  $('#enLinhas').innerHTML=enLines.map((l,i)=>`<div class="enl" data-i="${i}">
+    <input class="enItem" list="itemList" placeholder="Digite o nome do item" value="${esc(l.name)}">
+    <input class="enQtd" inputmode="decimal" placeholder="Qtd" value="${esc(l.qtd)}">
+    <select class="enUn"></select>
+    <input class="enCusto" inputmode="decimal" placeholder="Custo" value="${esc(l.custo)}">
+    <span class="enTot"></span>
+    <button class="enDel" title="Remover linha">×</button>
+    <div class="enInfo"></div></div>`).join('');
+  enLines.forEach((_,i)=>updateLine(i));
+}
+function lineCalc(l){
+  const it=itemByName(l.name), q=parseNum(l.qtd), c=parseNum(l.custo);
+  const fator=(it && l.mode==='e' && it.qtdEmb>0)?it.qtdEmb:1;
+  const units=q>0?q*fator:0, total=(q>0&&c>0)?q*c:0, custoUnit=c>0?c/fator:0;
+  return {it, q, c, fator, units, total, custoUnit};
+}
+function updateLine(i){
+  const row=document.querySelector(`#enLinhas .enl[data-i="${i}"]`); if(!row) return;
+  const l=enLines[i], k=lineCalc(l), sel=row.querySelector('.enUn'), info=row.querySelector('.enInfo');
+  const opts=k.it?[['u',k.it.un]]:[['u','—']];
+  if(k.it && k.it.qtdEmb>0) opts.push(['e',`${k.it.emb||'embalagem'} (${fq(k.it.qtdEmb)} ${k.it.un})`]);
+  if(!opts.some(o=>o[0]===l.mode)) l.mode='u';
+  const html=opts.map(o=>`<option value="${o[0]}"${o[0]===l.mode?' selected':''}>${esc(o[1])}</option>`).join('');
+  if(sel.innerHTML!==html) sel.innerHTML=html;
+  sel.value=l.mode;
+  row.querySelector('.enTot').textContent=k.total?fr(k.total):'';
+  info.className='enInfo';
+  if(!l.name.trim()){ info.textContent=''; }
+  else if(!k.it){ info.className='enInfo bad'; info.innerHTML=`Item não cadastrado. <a data-novo="${i}">Cadastrar "${esc(l.name.trim())}"</a>`; }
+  else {
+    const parts=[];
+    if(k.q>0 && k.fator!==1) parts.push(`= ${fq(k.units)} ${esc(k.it.un)}`);
+    if(k.custoUnit>0 && k.fator!==1) parts.push(`${fr(k.custoUnit)}/${esc(k.it.un)}`);
+    if(k.it.custo>0) parts.push(`último custo ${fr(k.it.custo)}/${esc(k.it.un)}`);
+    parts.push(`saldo atual ${fq(saldoDe(k.it.id))} ${esc(k.it.un)}`);
+    info.textContent=parts.join(' · ');
+  }
+  let sum=0; enLines.forEach(x=>sum+=lineCalc(x).total); $('#enTotal').textContent=fr(sum);
+}
+function autoCusto(i){
+  const l=enLines[i], it=itemByName(l.name);
+  if(!it || !l.custoAuto) return;
+  const fator=(l.mode==='e'&&it.qtdEmb>0)?it.qtdEmb:1;
+  l.custo=it.custo>0?String(Math.round(it.custo*fator*100)/100).replace('.',','):'';
+  const inp=document.querySelector(`#enLinhas .enl[data-i="${i}"] .enCusto`); if(inp) inp.value=l.custo;
+}
+function salvarEntrada(){
+  const date=fromInput($('#enData').value)||new Date();
+  const forn=$('#enForn').value.trim(), nota=$('#enNota').value.trim(), resp=$('#enResp').value.trim();
+  const usadas=enLines.filter(l=>l.name.trim()||String(l.qtd).trim());
+  if(!usadas.length){ toast('Preencha pelo menos um item.'); return; }
+  for(const l of usadas){
+    const k=lineCalc(l);
+    if(!k.it){ toast(`"${l.name||'(sem nome)'}" não está cadastrado. Cadastre o item primeiro.`,5000); return; }
+    if(!(k.q>0)){ toast(`Informe a quantidade de "${k.it.name}".`); return; }
+  }
+  const group=uid(); let n=0, total=0;
+  usadas.forEach(l=>{
+    const k=lineCalc(l);
+    const m={id:uid(), date:date.toISOString(), type:'entrada', itemId:k.it.id, itemName:k.it.name, qtd:k.units, un:k.it.un,
+      custo:k.custoUnit||0, valor:k.total||0, forn, nota, event:'', resp, group, obs:k.fator!==1?`${fq(k.q)} × ${k.it.emb||'embalagem'}`:''};
+    S.moves.push(m); syncMove(m);
+    let changed=false;
+    if(k.custoUnit>0 && k.custoUnit!==k.it.custo){ k.it.custo=Math.round(k.custoUnit*10000)/10000; changed=true; }
+    if(forn && forn!==k.it.forn){ k.it.forn=forn; changed=true; }
+    if(changed) syncItem(k.it);
+    n++; total+=k.total||0;
+  });
+  if(resp) rememberPerson(resp);
+  save(); resetEntrada(); renderLists();
+  toast(`Entrada salva ✓ ${n} item(ns)${total?` · ${fr(total)}`:''}`, 4000);
+}
+
+// --- Itens ---
+let itEditing=null;
+function resetItemForm(name=''){
+  itEditing=null; $('#itTitle').textContent='Novo item';
+  $('#itNome').value=name; ['#itMin','#itEmb','#itQtdEmb','#itCusto','#itForn','#itObs'].forEach(s=>$(s).value='');
+  $('#itCat').value=CATS[0]; $('#itUn').value='kg'; $('#itLocal').value=LOCAIS[0]; $('#itSaldoInfo').textContent='';
+}
+function editItem(id){
+  const i=itemById(id); if(!i) return;
+  renderLists();
+  const setSel=(sel,v)=>{ if(v && ![...$(sel).options].some(o=>o.value===v)) $(sel).insertAdjacentHTML('beforeend',`<option>${esc(v)}</option>`); $(sel).value=v||$(sel).options[0].value; };
+  itEditing=id; $('#itTitle').textContent='Editar item';
+  $('#itNome').value=i.name; setSel('#itCat',i.cat); setSel('#itUn',i.un); setSel('#itLocal',i.local);
+  const nv=v=>v>0||v===0?String(v).replace('.',','):'';
+  $('#itMin').value=nv(i.min); $('#itEmb').value=i.emb||''; $('#itQtdEmb').value=nv(i.qtdEmb); $('#itCusto').value=nv(i.custo);
+  $('#itForn').value=i.forn||''; $('#itObs').value=i.obs||'';
+  $('#itSaldoInfo').textContent=`Saldo atual: ${fq(saldoDe(id))} ${i.un}. Para corrigir o saldo, use a importação da contagem.`;
+  window.scrollTo({top:0,behavior:'smooth'}); $('#itNome').focus();
+}
+function salvarItem(){
+  const name=$('#itNome').value.trim();
+  if(!name){ toast('Dê um nome ao item.'); return; }
+  const dup=itemByName(name);
+  if(dup && dup.id!==itEditing){ toast('Já existe um item com esse nome.'); return; }
+  const num=s=>{ const v=parseNum($(s).value); return isNaN(v)?null:v; };
+  const data={name, cat:$('#itCat').value, un:$('#itUn').value, local:$('#itLocal').value, min:num('#itMin'),
+    emb:$('#itEmb').value.trim(), qtdEmb:num('#itQtdEmb'), custo:num('#itCusto'), forn:$('#itForn').value.trim(), obs:$('#itObs').value.trim()};
+  let it;
+  if(itEditing){ it=itemById(itEditing); const old=it.name; Object.assign(it,data);
+    if(old!==it.name) S.moves.forEach(m=>{ if(m.itemId===it.id){ m.itemName=it.name; } });
+    toast('Item atualizado'); }
+  else { it=Object.assign({id:uid()},data); S.items.push(it); toast('Item cadastrado'); }
+  syncItem(it); save();
+  const back=pendingNovo; pendingNovo=null;
+  resetItemForm(); renderLists(); renderItens();
+  if(back!==null){ showSub('entrada'); if(enLines[back]){ enLines[back].name=it.name; renderEnLines(); autoCusto(back); updateLine(back); } }
+}
+function renderItens(){
+  const q=norm($('#itBusca').value), sm=saldoMap();
+  const list=S.items.filter(i=>!q||norm(i.name+' '+i.cat).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  $('#itList').innerHTML=list.length?list.map(i=>`<div class="item"><div class="info"><div class="name">${esc(i.name)}</div>
+    <div class="meta">${esc(i.cat||'')} · ${esc(i.un)}${i.local?' · '+esc(i.local):''} · saldo ${fq(sm[i.id]||0)} ${esc(i.un)}</div></div>
+    <div class="acts"><button class="btn sec sm" data-edit="${i.id}">Editar</button><button class="btn danger sm" data-del="${i.id}">Excluir</button></div></div>`).join('')
+    : `<p class="muted">${S.items.length?'Nada encontrado.':'Nenhum item ainda. Importe a planilha de contagem ou cadastre ao lado.'}</p>`;
+}
+let pendingNovo=null;
+
+// --- Importação da planilha de contagem ---
+function loadXLSX(){
+  return new Promise((res,rej)=>{
+    if(window.XLSX) return res(window.XLSX);
+    const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>res(window.XLSX); s.onerror=()=>rej(new Error('Não consegui carregar o leitor de planilhas (precisa de internet).'));
+    document.head.appendChild(s);
+  });
+}
+function mapHeader(h){
+  const n=norm(h);
+  if(n==='item'||n.startsWith('nome')) return 'name';
+  if(n.startsWith('categoria')) return 'cat';
+  if(n.startsWith('unidade')) return 'un';
+  if(n.startsWith('embalagem')) return 'emb';
+  if(n.startsWith('qtd') && n.includes('embalagem')) return 'qtdEmb';
+  if(n.startsWith('local')) return 'local';
+  if(n.includes('minimo')) return 'min';
+  if(n.startsWith('quantidade atual')||n==='quantidade'||n==='saldo') return 'qtd';
+  if(n.startsWith('custo')) return 'custo';
+  if(n.startsWith('fornecedor')) return 'forn';
+  if(n.startsWith('observ')) return 'obs';
+  return null;
+}
+async function importarPlanilha(file){
+  let XLSX;
+  try{ XLSX=await loadXLSX(); }catch(e){ toast(e.message,5000); return; }
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  const sheetName=wb.SheetNames.find(n=>norm(n)==='estoque')||wb.SheetNames.find(n=>!/como preencher|listas/i.test(n))||wb.SheetNames[0];
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,raw:true,defval:''});
+  const hi=rows.findIndex(r=>r.some(c=>mapHeader(c)==='name'));
+  if(hi<0){ toast('Não encontrei a coluna "Item" na planilha.',5000); return; }
+  const cols=rows[hi].map(mapHeader);
+  const data=rows.slice(hi+1).map(r=>{ const o={}; cols.forEach((k,i)=>{ if(k) o[k]=r[i]; }); return o; })
+    .filter(o=>String(o.name||'').trim() && !/^exemplo/i.test(String(o.name).trim()));
+  if(!data.length){ toast('A planilha não tem itens preenchidos (as linhas EXEMPLO são ignoradas).',5000); return; }
+  const novos=data.filter(o=>!itemByName(o.name)).length;
+  if(!confirm(`Importar ${data.length} item(ns) da aba "${sheetName}"?\n\n• ${novos} novo(s)\n• ${data.length-novos} já cadastrado(s) serão atualizados\n• o saldo de cada item com "Quantidade atual" preenchida será ajustado para esse valor`)) return;
+  const sm=saldoMap(), group=uid(), now=new Date().toISOString(), resp=$('#enResp').value.trim();
+  let nItens=0, nAj=0;
+  data.forEach(o=>{
+    const n=v=>{ const x=parseNum(v); return isNaN(x)?null:x; };
+    let it=itemByName(o.name);
+    const fields={name:String(o.name).trim(), cat:String(o.cat||'').trim()||(it&&it.cat)||'Outros', un:String(o.un||'').trim()||(it&&it.un)||'un',
+      emb:String(o.emb||'').trim(), qtdEmb:n(o.qtdEmb), local:String(o.local||'').trim(), min:n(o.min), custo:n(o.custo),
+      forn:String(o.forn||'').trim(), obs:String(o.obs||'').trim()};
+    if(it){ Object.keys(fields).forEach(k=>{ const v=fields[k]; if(v!==null && v!=='') it[k]=v; }); }
+    else { it=Object.assign({id:uid()},fields); S.items.push(it); }
+    syncItem(it); nItens++;
+    const q=n(o.qtd);
+    if(q!==null){
+      const delta=Math.round((q-(sm[it.id]||0))*1000)/1000;
+      if(delta!==0){
+        const m={id:uid(), date:now, type:'ajuste', itemId:it.id, itemName:it.name, qtd:delta, un:it.un, custo:it.custo||0,
+          valor:0, forn:'', nota:'', event:'', resp, group, obs:'Contagem importada da planilha'};
+        S.moves.push(m); syncMove(m); nAj++;
+      }
+    }
+  });
+  save(); renderLists(); renderItens();
+  toast(`Importado ✓ ${nItens} item(ns), ${nAj} saldo(s) ajustado(s)`,5000);
+}
+
+// --- Histórico ---
+let hItem='';
+function renderHist(){
+  const q=norm($('#hBusca').value), tipo=$('#hTipo').value;
+  const list=S.moves.filter(m=>{
+    if(tipo && m.type!==tipo) return false;
+    if(hItem && m.itemId!==hItem) return false;
+    if(q && !norm(m.itemName+' '+m.forn+' '+m.nota+' '+m.resp+' '+m.obs+' '+m.event).includes(q)) return false;
+    return true;
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const box=$('#hList');
+  const filtro=hItem&&itemById(hItem)?`<p class="muted">Mostrando só: <b>${esc(itemById(hItem).name)}</b> · <a href="#" id="hClear">ver todos</a></p>`:'';
+  if(!list.length){ box.innerHTML=filtro+'<p class="muted">Nenhum movimento encontrado.</p>'; bindHClear(); return; }
+  box.innerHTML=filtro+list.slice(0,300).map(m=>{
+    const cls=m.type==='entrada'?'mv-in':m.type==='saida'?'mv-out':'mv-adj';
+    const sign=m.qtd>0?'+':m.qtd<0?'−':'';
+    return `<div class="item"><div class="info"><div class="name"><span class="${cls}">${TIPOS[m.type]||m.type}</span> · ${esc(m.itemName)}</div>
+      <div class="meta">${fmt(m.date)}${m.forn?' · '+esc(m.forn):''}${m.nota?' · NF '+esc(m.nota):''}${m.resp?' · '+esc(m.resp):''}${m.valor?' · '+fr(m.valor):''}${m.obs?' · '+esc(m.obs):''}</div></div>
+      <div class="qty ${cls}">${sign}${fq(Math.abs(m.qtd))} <small>${esc(m.un)}</small></div>
+      <div class="acts"><button class="btn danger sm" data-mdel="${m.id}">Excluir</button></div></div>`;
+  }).join('')+(list.length>300?`<p class="muted">Mostrando os 300 mais recentes de ${list.length}.</p>`:'');
+  bindHClear();
+}
+function bindHClear(){ const a=$('#hClear'); if(a) a.onclick=e=>{ e.preventDefault(); hItem=''; renderHist(); }; }
+
+// --- eventos ---
+function initEstoque(){
+  $('#eSub').onclick=e=>{ const b=e.target.closest('.chip'); if(b){ if(b.dataset.s==='historico') hItem=''; showSub(b.dataset.s); } };
+  $('#esBusca').oninput=renderSaldo; $('#esSoBaixo').onchange=renderSaldo;
+  $('#esCat').onchange=e=>{ esCat=e.target.value; renderSaldo(); };
+  $('#esBaixoBox').onclick=()=>{ $('#esSoBaixo').checked=!$('#esSoBaixo').checked; renderSaldo(); };
+  document.querySelector('#tab-estoque').addEventListener('click',e=>{
+    const ed=e.target.closest('[data-edit]'), hi=e.target.closest('[data-hist]'), de=e.target.closest('[data-del]'), md=e.target.closest('[data-mdel]'), nv=e.target.closest('[data-novo]');
+    if(ed){ showSub('itens'); editItem(ed.dataset.edit); }
+    if(hi){ hItem=hi.dataset.hist; $('#hBusca').value=''; $('#hTipo').value=''; showSub('historico'); }
+    if(de){ const it=itemById(de.dataset.del); if(!it) return;
+      const nm=S.moves.filter(m=>m.itemId===it.id).length;
+      if(!confirm(`Excluir o item "${it.name}"?${nm?`\n\nEle tem ${nm} movimento(s) no histórico, que continuam registrados.`:''}`)) return;
+      S.items=S.items.filter(x=>x.id!==it.id); syncDelete('itens',it.id); save(); if(itEditing===it.id) resetItemForm(); renderLists(); renderItens(); }
+    if(md){ const m=S.moves.find(x=>x.id===md.dataset.mdel); if(!m) return;
+      if(!confirm(`Excluir este movimento?\n\n${TIPOS[m.type]||m.type} de ${fq(Math.abs(m.qtd))} ${m.un} · ${m.itemName}\n\nO saldo do item será recalculado.`)) return;
+      S.moves=S.moves.filter(x=>x.id!==m.id); syncDelete('movimentos',m.id); save(); renderHist(); }
+    if(nv){ const i=+nv.dataset.novo; pendingNovo=i; showSub('itens'); resetItemForm(enLines[i].name.trim()); $('#itCat').focus(); }
+  });
+  // entrada
+  const lineIdx=e=>{ const r=e.target.closest('.enl'); return r?+r.dataset.i:-1; };
+  $('#enLinhas').addEventListener('input',e=>{
+    const i=lineIdx(e); if(i<0) return; const l=enLines[i];
+    if(e.target.classList.contains('enItem')){ l.name=e.target.value; if(itemByName(l.name)){ l.custoAuto=!l.custo||l.custoAuto; autoCusto(i); } }
+    if(e.target.classList.contains('enQtd')) l.qtd=e.target.value;
+    if(e.target.classList.contains('enCusto')){ l.custo=e.target.value; l.custoAuto=false; }
+    if(e.target.classList.contains('enUn')){ if(l.mode!==e.target.value){ l.mode=e.target.value; autoCusto(i); } }
+    updateLine(i);
+  });
+  $('#enLinhas').addEventListener('change',e=>{
+    const i=lineIdx(e); if(i<0) return;
+    if(e.target.classList.contains('enUn') && enLines[i].mode!==e.target.value){ enLines[i].mode=e.target.value; autoCusto(i); updateLine(i); }
+  });
+  $('#enLinhas').addEventListener('click',e=>{
+    if(e.target.classList.contains('enDel')){ const i=lineIdx(e); enLines.splice(i,1); if(!enLines.length) enLines.push(blankLine()); renderEnLines(); }
+  });
+  $('#enAdd').onclick=()=>{ enLines.push(blankLine()); renderEnLines(); const r=document.querySelectorAll('#enLinhas .enItem'); r[r.length-1].focus(); };
+  $('#enSalvar').onclick=salvarEntrada;
+  $('#enLimpar').onclick=()=>{ if(enLines.some(l=>l.name||l.qtd) && !confirm('Limpar a entrada que está sendo lançada?')) return; resetEntrada(); };
+  // itens
+  $('#itSalvar').onclick=salvarItem;
+  $('#itLimpar').onclick=()=>{ pendingNovo=null; resetItemForm(); };
+  $('#itBusca').oninput=renderItens;
+  $('#itImport').onclick=()=>$('#itFile').click();
+  $('#itFile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    try{ await importarPlanilha(f); }catch(err){ toast('Não consegui ler a planilha: '+(err.message||err),6000); } };
+  // histórico
+  $('#hBusca').oninput=renderHist; $('#hTipo').onchange=renderHist;
+  renderLists(); resetItemForm(); resetEntrada();
+}
+
 // ---------- Início ----------
 function init(){
   form.made=new Date(); $('#fMade').value=toInput(form.made);
@@ -939,6 +1455,7 @@ function init(){
 window.addEventListener('resize', ()=>{ if(document.querySelector('#tab-etiquetar.active')) renderPreview(); });
 setInterval(()=>{ updateBadge(); if(document.querySelector('#tab-validades.active')) renderValidades(); }, 60000);
 init();
+initEstoque();
 $('#cConnect').onclick=connectCloud;
 $('#cSyncNow').onclick=()=>syncNow();
 $('#cDisconnect').onclick=()=>{
